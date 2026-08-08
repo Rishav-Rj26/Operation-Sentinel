@@ -1,16 +1,189 @@
 @import "tailwindcss";
 
-:root {
-  --primary: #3b82f6;
-  --primary-glow: rgba(59, 130, 246, 0.15);
-  --accent: #6366f1;
-  --accent-glow: rgba(99, 102, 241, 0.15);
-  --bg-primary: #050a18;
-  --bg-secondary: #0a1628;
-  --bg-card: rgba(15, 25, 50, 0.6);
-  --border-color: rgba(56, 75, 112, 0.3);
+/* ── Stitch Tailwind v4 Theme Extension ──────────────── */
+@theme {
+  /* Colors — Surfaces */
+  --color-surface: #051424;
+  --color-surface-dim: #051424;
+  --color-surface-bright: #2c3a4c;
+  --color-surface-container-lowest: #010f1f;
+  --color-surface-container-low: #0d1c2d;
+  --color-surface-container: #122131;
+  --color-surface-container-high: #1c2b3c;
+  --color-surface-container-highest: #273647;
+  --color-surface-variant: #273647;
+  --color-surface-tint: #00dbe7;
+  --color-background: #051424;
+
+  /* Colors — Primary (Cyan family) */
+  --color-primary: #e1fdff;
+  --color-primary-container: #00f2ff;
+  --color-primary-fixed: #74f5ff;
+  --color-primary-fixed-dim: #00dbe7;
+  --color-on-primary: #00363a;
+  --color-on-primary-container: #006a71;
+  --color-on-primary-fixed: #002022;
+  --color-on-primary-fixed-variant: #004f54;
+  --color-inverse-primary: #00696f;
+
+  /* Colors — On-Surface (text) */
+  --color-on-surface: #d4e4fa;
+  --color-on-surface-variant: #b9cacb;
+  --color-on-background: #d4e4fa;
+  --color-inverse-surface: #d4e4fa;
+  --color-inverse-on-surface: #233143;
+
+  /* Colors — Secondary */
+  --color-secondary: #c1c6d7;
+  --color-secondary-container: #414755;
+  --color-secondary-fixed: #dde2f4;
+  --color-secondary-fixed-dim: #c1c6d7;
+  --color-on-secondary: #2a303d;
+  --color-on-secondary-container: #afb5c5;
+  --color-on-secondary-fixed: #161c28;
+  --color-on-secondary-fixed-variant: #414755;
+
+  /* Colors — Tertiary */
+  --color-tertiary: #f7f7fd;
+  --color-tertiary-container: #dadbe0;
+  --color-tertiary-fixed: #e1e2e7;
+  --color-tertiary-fixed-dim: #c5c6cb;
+  --color-on-tertiary: #2e3134;
+  --color-on-tertiary-container: #5e6064;
+  --color-on-tertiary-fixed: #191c1f;
+  --color-on-tertiary-fixed-variant: #44474b;
+
+  /* Colors — Error (Red) */
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-on-error: #690005;
+  --color-on-error-container: #ffdad6;
+
+  /* Colors — Outline */
+  --color-outline: #849495;
+  --color-outline-variant: #3a494b;
+
+  /* Colors — Semantic (quick aliases) */
+  --color-cyan: #00dbe7;
+  --color-amber: #ffbf00;
+  --color-crimson: #d50000;
+  --color-success: #00c853;
+
+  /* Font Families */
+  --font-headline-lg: 'Inter', system-ui, sans-serif;
+  --font-headline-md: 'Inter', system-ui, sans-serif;
+  --font-body-md: 'Inter', system-ui, sans-serif;
+  --font-label-caps: 'JetBrains Mono', monospace;
+  --font-data-lg: 'JetBrains Mono', monospace;
+  --font-data-md: 'JetBrains Mono', monospace;
+
+  /* Font Sizes */
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-lg--font-weight: 700;
+
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--letter-spacing: -0.01em;
+  --text-headline-md--font-weight: 600;
+
+  --text-label-caps: 11px;
+  --text-label-caps--line-height: 16px;
+  --text-label-caps--letter-spacing: 0.1em;
+  --text-label-caps--font-weight: 700;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+
+  --text-data-lg: 18px;
+  --text-data-lg--line-height: 24px;
+  --text-data-lg--font-weight: 500;
+
+  --text-data-md: 14px;
+  --text-data-md--line-height: 20px;
+  --text-data-md--font-weight: 400;
+
+  /* Spacing */
+  --spacing-unit: 4px;
+  --spacing-gutter: 16px;
+  --spacing-margin-mobile: 16px;
+  --spacing-margin-desktop: 32px;
+
+  /* Border Radius */
+  --radius-DEFAULT: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-full: 0.75rem;
 }
 
+/*
+ * ══════════════════════════════════════════════════════════
+ *  OPERATION SENTINEL — Design System
+ *  Tokens extracted from Google Stitch Project:
+ *    projects/1220308588916708488
+ *  Theme: "Sentinel Command" (Dark Mode First, Cyber-Technical)
+ *  Fonts: Inter (UI) + JetBrains Mono (Data/Telemetry)
+ *  Primary: Cyan #00dbe7  |  Warning: Amber #ffbf00
+ *  Critical: Crimson #d50000  |  Success: Emerald #00c853
+ * ══════════════════════════════════════════════════════════
+ */
+
+/* ── Google Fonts ─────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+/* ── Stitch Design Tokens (CSS Custom Properties) ────── */
+:root {
+  /* Surfaces */
+  --surface:                  #051424;
+  --surface-dim:              #051424;
+  --surface-bright:           #2c3a4c;
+  --surface-container-lowest: #010f1f;
+  --surface-container-low:    #0d1c2d;
+  --surface-container:        #122131;
+  --surface-container-high:   #1c2b3c;
+  --surface-container-highest:#273647;
+  --surface-variant:          #273647;
+  --surface-tint:             #00dbe7;
+
+  /* Primary (Cyan) */
+  --primary:                  #e1fdff;
+  --primary-container:        #00f2ff;
+  --primary-fixed:            #74f5ff;
+  --primary-fixed-dim:        #00dbe7;
+  --on-primary:               #00363a;
+  --on-primary-container:     #006a71;
+  --on-primary-fixed:         #002022;
+
+  /* On-Surface (text) */
+  --on-surface:               #d4e4fa;
+  --on-surface-variant:       #b9cacb;
+  --on-background:            #d4e4fa;
+
+  /* Secondary */
+  --secondary:                #c1c6d7;
+  --secondary-container:      #414755;
+  --on-secondary:             #2a303d;
+
+  /* Error (Crimson) */
+  --error:                    #ffb4ab;
+  --error-container:          #93000a;
+  --on-error:                 #690005;
+
+  /* Outline */
+  --outline:                  #849495;
+  --outline-variant:          #3a494b;
+
+  /* Semantic */
+  --cyan:                     #00dbe7;
+  --amber:                    #ffbf00;
+  --crimson:                  #d50000;
+  --success:                  #00c853;
+}
+
+/* ── Base Reset ───────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -21,8 +194,8 @@ html, body {
   width: 100%;
   min-height: 100vh;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-primary);
-  color: #e2e8f0;
+  background-color: var(--surface);
+  color: var(--on-surface);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -32,35 +205,138 @@ html, body {
   min-height: 100vh;
 }
 
-/* ── Custom Scrollbar ──────────────────────────────────── */
+/* ── Grid Background (Stitch tactical pattern) ────────── */
+.grid-bg,
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(to right, rgba(0, 219, 231, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 219, 231, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── Scrollbar (Stitch-style thin dark) ───────────────── */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(255, 255, 255, 0.02);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.6);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.8);
+  background: rgba(0, 219, 231, 0.5);
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
+.hide-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
-  border-radius: 4px;
+.hide-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.6);
-  border-radius: 4px;
+.hide-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+.hide-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 219, 231, 0.5);
 }
 
-/* ── Animations ────────────────────────────────────────── */
+/* ── Glass Panel (Stitch glassmorphic card) ───────────── */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 0.5px solid rgba(0, 242, 255, 0.2);
+  border-left: 0.5px solid rgba(255, 255, 255, 0.05);
+  border-right: 0.5px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.glass {
+  background: rgba(18, 33, 49, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(18, 33, 49, 0.7) 0%, rgba(13, 28, 45, 0.5) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 219, 231, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 219, 231, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ── Input Fields (Stitch carved style) ──────────────── */
+.input-field {
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid rgba(132, 148, 149, 0.3);
+  transition: all 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--surface-tint);
+  box-shadow: 0 0 8px rgba(0, 219, 231, 0.2);
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 3px rgba(0, 219, 231, 0.15);
+}
+
+/* ── Buttons (Stitch primary/secondary) ──────────────── */
+.btn-primary {
+  background-color: var(--primary-container);
+  color: var(--on-primary-fixed);
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 16px rgba(0, 242, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* ── Glow Effects (Stitch neon style) ────────────────── */
+.glow-text {
+  text-shadow: 0 0 8px rgba(0, 242, 255, 0.4);
+}
+
+.neon-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--surface-tint), var(--primary-container), transparent);
+  opacity: 0.6;
+}
+
+/* ── CRT Overlay (Stitch scanline effect) ────────────── */
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 4px, 3px 100%;
+  z-index: 100;
+  opacity: 0.3;
+}
+
+/* ── Animations ───────────────────────────────────────── */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -82,8 +358,8 @@ html, body {
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
-  50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.6); }
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 219, 231, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(0, 219, 231, 0.6); }
 }
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
@@ -102,12 +378,12 @@ html, body {
   100% { transform: scale(2.5); opacity: 0; }
 }
 @keyframes count-up-flash {
-  0% { color: #3b82f6; }
-  100% { color: #fff; }
+  0% { color: var(--surface-tint); }
+  100% { color: var(--primary); }
 }
 @keyframes border-glow {
-  0%, 100% { border-color: rgba(56, 75, 112, 0.25); }
-  50% { border-color: rgba(59, 130, 246, 0.4); }
+  0%, 100% { border-color: var(--outline-variant); }
+  50% { border-color: rgba(0, 219, 231, 0.4); }
 }
 
 .animate-fade-in { animation: fade-in 0.3s ease-out; }
@@ -119,92 +395,49 @@ html, body {
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-border-glow { animation: border-glow 3s ease-in-out infinite; }
 
-/* ── Glass Effect ──────────────────────────────────────── */
-.glass {
-  background: rgba(15, 25, 50, 0.5);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(56, 75, 112, 0.3);
-}
-
-.glass-card {
-  background: linear-gradient(135deg, rgba(15, 25, 50, 0.7) 0%, rgba(10, 18, 40, 0.5) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(56, 75, 112, 0.25);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.glass-card:hover {
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(59, 130, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-/* ── Card Lift Effect ────────────────────────────────────── */
-.card-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.card-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(59, 130, 246, 0.1);
-}
-
-/* ── Grid Background ──────────────────────────────────── */
-.grid-bg {
-  background-image:
-    linear-gradient(rgba(56, 75, 112, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 75, 112, 0.08) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* ── Neon accent line ─────────────────────────────────── */
-.neon-line {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--primary), var(--accent), transparent);
-  opacity: 0.6;
-}
-
-/* ── Staggered animations ─────────────────────────────── */
+/* ── Stagger Delays ──────────────────────────────────── */
 .stagger-1 { animation-delay: 0.05s; }
 .stagger-2 { animation-delay: 0.1s; }
 .stagger-3 { animation-delay: 0.15s; }
 .stagger-4 { animation-delay: 0.2s; }
 .stagger-5 { animation-delay: 0.25s; }
 
-/* ── Input focus glow ─────────────────────────────────── */
-input:focus, select:focus, textarea:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+/* ── Card Lift Effect ────────────────────────────────── */
+.card-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(0, 219, 231, 0.1);
 }
 
-/* ── Button press effect ──────────────────────────────── */
-.btn-press:active {
-  transform: scale(0.97);
-}
-
-/* ── Badge glow for critical items ────────────────────── */
+/* ── Badge Glow (Stitch status indicators) ───────────── */
 .badge-critical {
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 8px rgba(255, 180, 171, 0.4);
 }
 .badge-active {
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 8px rgba(0, 200, 83, 0.4);
+}
+.badge-warning {
+  box-shadow: 0 0 8px rgba(255, 191, 0, 0.4);
 }
 
-/* ── Table row hover ──────────────────────────────────── */
+/* ── Table Row Hover (Stitch data-table style) ───────── */
 tbody tr {
   transition: background-color 0.2s ease, transform 0.15s ease;
 }
 tbody tr:hover {
-  background-color: rgba(59, 130, 246, 0.04);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* ── Skeleton shimmer ─────────────────────────────────── */
+/* ── Skeleton Shimmer ────────────────────────────────── */
 .skeleton-shimmer {
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite;
 }
 
-/* ── Line clamp utility ───────────────────────────────── */
+/* ── Line Clamp ──────────────────────────────────────── */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -212,30 +445,55 @@ tbody tr:hover {
   overflow: hidden;
 }
 
-/* ── Tabular numbers for counters ─────────────────────── */
+/* ── Tabular Numbers ─────────────────────────────────── */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Map Popup Styles ─────────────────────────────────── */
+/* ── Map Popup Styles (Stitch-themed) ────────────────── */
 .leaflet-popup-content-wrapper {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid rgba(56, 75, 112, 0.5) !important;
-  border-radius: 12px !important;
-  color: #e2e8f0 !important;
+  background: rgba(5, 20, 36, 0.95) !important;
+  border: 1px solid var(--outline-variant) !important;
+  border-radius: 4px !important;
+  color: var(--on-surface) !important;
   backdrop-filter: blur(8px);
 }
 .leaflet-popup-tip {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border-top: 1px solid rgba(56, 75, 112, 0.5) !important;
-  border-left: 1px solid rgba(56, 75, 112, 0.5) !important;
+  background: rgba(5, 20, 36, 0.95) !important;
+  border-top: 1px solid var(--outline-variant) !important;
+  border-left: 1px solid var(--outline-variant) !important;
 }
 .leaflet-popup-content p {
   margin: 4px 0 !important;
 }
 .leaflet-popup-content h3 {
-  color: #fff !important;
+  color: var(--primary) !important;
 }
 .leaflet-container {
-  background: #050a18 !important;
+  background: var(--surface) !important;
+}
+
+/* ── Corner Accents (Stitch tactical UI element) ─────── */
+.corner-accents {
+  position: relative;
+}
+.corner-accents::before,
+.corner-accents::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--surface-tint);
+}
+.corner-accents::before {
+  top: 0;
+  left: 0;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+.corner-accents::after {
+  bottom: 0;
+  right: 0;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
 }
