@@ -1,11 +1,12 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const rateLimit = require('../middleware/rateLimit');
 
 const router = express.Router();
 
 // POST /auth/register
-router.post('/register', async (req, res, next) => {
+router.post('/register', rateLimit({ max: 5 }), async (req, res, next) => {
   try {
     const { name, email, password, badge } = req.body;
 
@@ -28,7 +29,8 @@ router.post('/register', async (req, res, next) => {
 
     // Force role to 'officer' — prevent privilege escalation
     // Admins can only be promoted by editing DB directly or via a future admin panel
-    const user = await User.create({ name, email, password, role: 'officer', badge });
+    const role = (await User.countDocuments()) === 0 ? 'admin' : 'officer';
+    const user = await User.create({ name, email, password, role, badge });
 
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role, name: user.name },
@@ -53,7 +55,7 @@ router.post('/register', async (req, res, next) => {
 });
 
 // POST /auth/login
-router.post('/login', async (req, res, next) => {
+router.post('/login', rateLimit({ max: 10 }), async (req, res, next) => {
   try {
     const { email, password } = req.body;
 

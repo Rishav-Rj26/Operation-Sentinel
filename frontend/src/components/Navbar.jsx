@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { createElement, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Shield, Radio, LayoutDashboard, AlertTriangle, Car, LogOut, Menu, X, Map, BarChart3 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -39,13 +39,13 @@ const Navbar = ({ status, incidents = [] }) => {
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-1">
-              {navItems.map(({ to, label, icon: Icon }) => (
-                <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) =>
+              {navItems.map((item) => (
+                <NavLink key={item.to} to={item.to} end={item.to === '/'} className={({ isActive }) =>
                   `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'
                   }`
                 }>
-                  <Icon className="w-4 h-4" />{label}
+                  {createElement(item.icon, { className: 'w-4 h-4' })}{item.label}
                 </NavLink>
               ))}
             </div>
@@ -94,13 +94,13 @@ const Navbar = ({ status, incidents = [] }) => {
         {/* Mobile Menu */}
         {mobileOpen && (
           <div className="md:hidden pb-4 pt-2 border-t border-slate-800/50 space-y-1 animate-fade-in">
-            {navItems.map(({ to, label, icon: Icon }) => (
-              <NavLink key={to} to={to} end={to === '/'} onClick={() => setMobileOpen(false)} className={({ isActive }) =>
+            {navItems.map((item) => (
+              <NavLink key={item.to} to={item.to} end={item.to === '/'} onClick={() => setMobileOpen(false)} className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive ? 'bg-blue-500/10 text-blue-400' : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`
               }>
-                <Icon className="w-4 h-4" />{label}
+                {createElement(item.icon, { className: 'w-4 h-4' })}{item.label}
               </NavLink>
             ))}
             {user && (

@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-// Mount new sub-routers
+router.use('/', require('./dashboard'));
+router.use('/sectors', require('./sectors'));
+router.use('/units', require('./units'));
 router.use('/zones', require('./zones'));
 router.use('/officers', require('./officers'));
 router.use('/scheduler', require('./scheduler'));

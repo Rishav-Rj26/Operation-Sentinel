@@ -18,7 +18,7 @@ const AnalyticsPage = () => {
       try {
         const res = await statsAPI.getAnalytics();
         setData(res);
-      } catch (err) {
+      } catch {
         toast.error('Failed to load analytics data');
       } finally {
         setLoading(false);

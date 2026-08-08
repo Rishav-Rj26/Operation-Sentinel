@@ -1,7 +1,8 @@
 // Centralized API service — auto-attaches JWT, handles errors consistently
 
-const API_BASE = '/api';
-const AUTH_BASE = '/auth';
+const API_ORIGIN = import.meta.env.VITE_API_URL || '';
+const API_BASE = `${API_ORIGIN}/api`;
+const AUTH_BASE = `${API_ORIGIN}/auth`;
 
 const getToken = () => localStorage.getItem('sentinel_token');
 

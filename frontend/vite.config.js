@@ -5,6 +5,18 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          maps: ['leaflet', 'react-leaflet'],
+          charts: ['recharts'],
+          reports: ['jspdf', 'jspdf-autotable'],
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': {

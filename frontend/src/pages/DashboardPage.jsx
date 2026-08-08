@@ -38,7 +38,7 @@ const DashboardPage = () => {
       setUnits(unitsData);
       setStats(statsData);
       setIncidents(incData);
-    } catch (err) {
+    } catch {
       toast.error('Failed to fetch dashboard data');
     } finally {
       setLoading(false);
@@ -81,7 +81,7 @@ const DashboardPage = () => {
           const pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 }));
           payload.latitude = pos.coords.latitude;
           payload.longitude = pos.coords.longitude;
-        } catch {} // GPS optional
+        } catch { void 0; } // GPS optional
       }
       await incidentsAPI.create(payload);
       toast.success('Emergency incident dispatched!');
@@ -100,7 +100,7 @@ const DashboardPage = () => {
           const pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 }));
           baseLat = pos.coords.latitude;
           baseLng = pos.coords.longitude;
-        } catch {} // fallback to Delhi
+        } catch { void 0; } // fallback to Delhi
       }
       const result = await seedAPI.seed({ baseLat, baseLng });
       toast.success(`Seeded — ${result.counts.sectors} sectors, ${result.counts.units} units, ${result.counts.incidents} incidents`);

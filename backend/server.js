@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const http = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const errorHandler = require('./middleware/errorHandler');
@@ -20,6 +21,17 @@ const io = new Server(server, {
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
   },
+});
+
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+    if (!token) return next(new Error('Authentication required'));
+    socket.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    next(new Error('Invalid authentication token'));
+  }
 });
 
 // Track connected clients
@@ -62,6 +74,9 @@ app.use(errorHandler);
 
 // ── Database Connection & Server Start ──────────────────────
 const startServer = async () => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET must be set before starting the server.');
+  }
   let mongoUri = process.env.MONGO_URI;
 
   try {

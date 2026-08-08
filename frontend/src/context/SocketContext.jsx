@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSocket = () => useContext(SocketContext);
 
 // Derive socket URL from current page origin, or use env variable
@@ -18,16 +20,20 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
   const [userCount, setUserCount] = useState(0);
+  const { token } = useAuth();
 
   useEffect(() => {
+    if (!token) return undefined;
     const s = io(getSocketUrl(), {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
       reconnectionDelay: 2000,
+      auth: { token },
     });
 
     s.on('connect', () => {
       console.log('🔌 Socket connected:', s.id);
+      setSocket(s);
       setConnected(true);
     });
 
@@ -38,12 +44,10 @@ export const SocketProvider = ({ children }) => {
 
     s.on('userCount', (count) => setUserCount(count));
 
-    setSocket(s);
-
     return () => {
       s.disconnect();
     };
-  }, []);
+  }, [token]);
 
   return (
     <SocketContext.Provider value={{ socket, connected, userCount }}>

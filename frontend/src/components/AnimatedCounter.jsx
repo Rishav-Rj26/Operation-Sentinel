@@ -8,13 +8,11 @@ const AnimatedCounter = ({ value, duration = 1200, prefix = '', suffix = '', dec
 
   useEffect(() => {
     if (value === undefined || value === null || value === '—') {
-      setDisplay(value);
       return;
     }
 
     const numericValue = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(numericValue)) {
-      setDisplay(value);
       return;
     }
 
@@ -45,9 +43,12 @@ const AnimatedCounter = ({ value, duration = 1200, prefix = '', suffix = '', dec
     };
   }, [value, duration, decimals]);
 
-  const formatted = typeof display === 'number'
-    ? display.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-    : display;
+  const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+  const displayValue = value === undefined || value === null || value === '—' || isNaN(numericValue) ? value : display;
+
+  const formatted = typeof displayValue === 'number'
+    ? displayValue.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+    : displayValue;
 
   return (
     <span className="tabular-nums">

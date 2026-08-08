@@ -12,13 +12,9 @@ const ResourceAllocation = ({ units, onViewAll }) => {
     }
   };
 
-  const timeSince = (date) => {
+  const lastUpdated = (date) => {
     if (!date) return '—';
-    const seconds = Math.floor((Date.now() - new Date(date)) / 1000);
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-    return `${Math.floor(seconds / 86400)}d`;
+    return new Intl.DateTimeFormat('en-IN', { hour: '2-digit', minute: '2-digit' }).format(new Date(date));
   };
 
   return (
@@ -48,7 +44,7 @@ const ResourceAllocation = ({ units, onViewAll }) => {
                     {unit.status}
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-600 font-medium">{timeSince(unit.updatedAt)}</span>
+                <span className="text-[11px] text-slate-600 font-medium">{lastUpdated(unit.updatedAt)}</span>
               </div>
               <div className="flex items-center gap-3 text-[11px] text-slate-500">
                 <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{unit.sectorName || '—'}</span>
