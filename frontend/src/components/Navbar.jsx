@@ -1,15 +1,19 @@
 import { createElement, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Shield, Radio, LayoutDashboard, AlertTriangle, Car, LogOut, Menu, X, Map, BarChart3 } from 'lucide-react';
+import { Shield, Radio, LayoutDashboard, AlertTriangle, Car, LogOut, Menu, X, Map, BarChart3, Activity, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import NotificationPanel from './NotificationPanel';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/map', label: 'Live Map', icon: Map },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/incidents', label: 'Incidents', icon: AlertTriangle },
   { to: '/units', label: 'Units', icon: Car },
+  { to: '/officers', label: 'Officers', icon: Shield },
+  { to: '/zones', label: 'Zones', icon: Map },
+  { to: '/roster', label: 'Roster', icon: LayoutDashboard },
+  { to: '/fatigue', label: 'Fatigue', icon: Activity },
+  { to: '/audit', label: 'Audit Log', icon: FileText },
 ];
 
 const Navbar = ({ status, incidents = [] }) => {

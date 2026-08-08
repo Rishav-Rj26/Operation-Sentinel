@@ -102,8 +102,9 @@ const DashboardPage = () => {
           baseLng = pos.coords.longitude;
         } catch { void 0; } // fallback to Delhi
       }
-      const result = await seedAPI.seed({ baseLat, baseLng });
-      toast.success(`Seeded — ${result.counts.sectors} sectors, ${result.counts.units} units, ${result.counts.incidents} incidents`);
+      const result = await seedAPI.seed({ baseLat, baseLng, scale: 'micro' });
+      const c = result.counts;
+      toast.success(`Seeded — ${c.zones} zones, ${c.officers} officers, ${c.shifts} shifts, ${c.standby} standby`);
     } catch (err) { toast.error(err.message); }
     finally { setSeeding(false); }
   };

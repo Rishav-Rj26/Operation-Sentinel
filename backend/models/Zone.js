@@ -41,7 +41,21 @@ const ZoneSchema = new mongoose.Schema(
   },
   { 
     timestamps: true,
-    toJSON: { virtuals: true },
+    toJSON: {
+      virtuals: true,
+      transform(doc, ret) {
+        ret.id = ret._id;
+        ret.sizeScore = ret.size_score;
+        ret.densityScore = ret.density_score;
+        ret.safeThreshold = ret.safe_threshold;
+        ret.adjacentZones = ret.adjacency;
+        delete ret.size_score;
+        delete ret.density_score;
+        delete ret.safe_threshold;
+        delete ret.adjacency;
+        return ret;
+      },
+    },
     toObject: { virtuals: true }
   }
 );

@@ -32,7 +32,23 @@ const ShiftSchema = new mongoose.Schema(
       default: 0,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      transform(doc, ret) {
+        ret.id = ret._id;
+        ret.zoneId = ret.zone_id;
+        ret.shiftType = ret.shift_type;
+        ret.officers = ret.assigned_officers;
+        ret.requiredOfficers = ret.required_headcount;
+        delete ret.zone_id;
+        delete ret.shift_type;
+        delete ret.assigned_officers;
+        delete ret.required_headcount;
+        return ret;
+      },
+    },
+  }
 );
 
 ShiftSchema.index({ zone_id: 1, date: 1, shift_type: 1 }, { unique: true });

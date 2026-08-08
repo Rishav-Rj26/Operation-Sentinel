@@ -63,6 +63,8 @@ const request = async (url, options = {}) => {
   }
 };
 
+const buildQuery = (params) => { if (!params) return ''; const q = new URLSearchParams(params).toString(); return q ? '?' + q : ''; };
+
 // ── Auth ────────────────────────────────────────────────────
 export const authAPI = {
   login: (email, password) =>
@@ -132,4 +134,44 @@ export const incidentsAPI = {
 // ── Seed ────────────────────────────────────────────────────
 export const seedAPI = {
   seed: (data = {}) => request(`${API_BASE}/seed`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Officers ────────────────────────────────────────────────
+export const officersAPI = {
+  getAll: (params) => request(`${API_BASE}/officers${buildQuery(params)}`),
+  getById: (id) => request(`${API_BASE}/officers/${id}`),
+  create: (data) => request(`${API_BASE}/officers`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`${API_BASE}/officers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`${API_BASE}/officers/${id}`, { method: 'DELETE' }),
+  bulkCreate: (data) => request(`${API_BASE}/officers/bulk`, { method: 'POST', body: JSON.stringify(data) }),
+  getStats: () => request(`${API_BASE}/officers/stats`),
+};
+
+// ── Zones ───────────────────────────────────────────────────
+export const zonesAPI = {
+  getAll: () => request(`${API_BASE}/zones`),
+  create: (data) => request(`${API_BASE}/zones`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`${API_BASE}/zones/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`${API_BASE}/zones/${id}`, { method: 'DELETE' }),
+  triggerMassAbsence: (id, pct) => request(`${API_BASE}/zones/${id}/mass-absence`, { method: 'POST', body: JSON.stringify({ percentage: pct }) }),
+};
+
+// ── Scheduler ───────────────────────────────────────────────
+export const schedulerAPI = {
+  generate: (days) => request(`${API_BASE}/scheduler/generate`, { method: 'POST', body: JSON.stringify({ days }) }),
+  getRoster: (params) => request(`${API_BASE}/scheduler/roster${buildQuery(params)}`),
+  getShiftDetail: (id) => request(`${API_BASE}/scheduler/roster/${id}`),
+};
+
+// ── Fatigue ─────────────────────────────────────────────────
+export const fatigueAPI = {
+  getDashboard: () => request(`${API_BASE}/fatigue/dashboard`),
+  recalculate: () => request(`${API_BASE}/fatigue/recalculate`, { method: 'POST' }),
+  getHighRisk: () => request(`${API_BASE}/fatigue/high-risk`),
+};
+
+// ── Audit Logs ──────────────────────────────────────────────
+export const auditAPI = {
+  getAll: (params) => request(`${API_BASE}/audit-logs${buildQuery(params)}`),
+  getStats: () => request(`${API_BASE}/audit-logs/stats`),
 };

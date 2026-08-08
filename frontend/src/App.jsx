@@ -10,6 +10,11 @@ import IncidentsPage from './pages/IncidentsPage';
 import UnitsPage from './pages/UnitsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import MapPage from './pages/MapPage';
+import OfficersPage from './pages/OfficersPage';
+import ZoneConfigPage from './pages/ZoneConfigPage';
+import RosterPage from './pages/RosterPage';
+import FatiguePage from './pages/FatiguePage';
+import AuditLogPage from './pages/AuditLogPage';
 
 import { useState, useEffect } from 'react';
 import { statsAPI, incidentsAPI } from './services/api';
@@ -72,6 +77,11 @@ const AppLayout = () => {
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/incidents" element={<IncidentsPage />} />
           <Route path="/units" element={<UnitsPage />} />
+          <Route path="/officers" element={<OfficersPage />} />
+          <Route path="/zones" element={<ZoneConfigPage />} />
+          <Route path="/roster" element={<RosterPage />} />
+          <Route path="/fatigue" element={<FatiguePage />} />
+          <Route path="/audit" element={<AuditLogPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

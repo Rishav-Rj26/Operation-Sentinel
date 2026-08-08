@@ -40,7 +40,21 @@ const OfficerSchema = new mongoose.Schema(
       default: 0,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      transform(doc, ret) {
+        ret.id = ret._id;
+        ret.zoneId = ret.current_zone_id;
+        ret.fatigueScore = ret.fatigue_score;
+        ret.lastShiftEnd = ret.last_shift_end;
+        delete ret.current_zone_id;
+        delete ret.fatigue_score;
+        delete ret.last_shift_end;
+        return ret;
+      },
+    },
+  }
 );
 
 OfficerSchema.index({ rank: 1 });
