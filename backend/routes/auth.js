@@ -27,9 +27,10 @@ router.post('/register', rateLimit({ max: 5 }), async (req, res, next) => {
       return res.status(409).json({ message: 'User with this email already exists' });
     }
 
-    // Force role to 'officer' — prevent privilege escalation
-    // Admins can only be promoted by editing DB directly or via a future admin panel
-    const role = (await User.countDocuments()) === 0 ? 'admin' : 'officer';
+    // Allow role selection from frontend for demo purposes
+    // First user is always admin
+    const count = await User.countDocuments();
+    const role = count === 0 ? 'admin' : (req.body.role || 'officer');
     const user = await User.create({ name, email, password, role, badge });
 
     const token = jwt.sign(

@@ -91,7 +91,7 @@ const RosterPage = () => {
         </div>
         <div className="flex gap-3">
           <button onClick={handleGenerate} disabled={generating} className="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all disabled:opacity-50">
-            <RefreshCw className={\`w-4 h-4 mr-2 \${generating ? 'animate-spin' : ''}\`} />
+            <RefreshCw className={`w-4 h-4 mr-2 ${generating ? 'animate-spin' : ''}`} />
             {generating ? 'Generating...' : 'Generate 30-Day Roster'}
           </button>
         </div>
@@ -127,7 +127,7 @@ const RosterPage = () => {
             <h3 className="text-xl font-bold text-white mb-2">No Roster Available</h3>
             <p className="text-slate-400 mb-6 max-w-md mx-auto">Generate a new 30-day roster to automatically assign officers based on fatigue constraints and zone requirements.</p>
             <button onClick={handleGenerate} disabled={generating} className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg">
-              <RefreshCw className={\`w-4 h-4 mr-2 \${generating ? 'animate-spin' : ''}\`} />
+              <RefreshCw className={`w-4 h-4 mr-2 ${generating ? 'animate-spin' : ''}`} />
               {generating ? 'Generating...' : 'Generate Roster Now'}
             </button>
           </div>
@@ -148,7 +148,7 @@ const RosterPage = () => {
                   <th className="bg-slate-800/90 border-b border-slate-700 sticky left-0 z-20 backdrop-blur-md"></th>
                   {viewDates.map(d => 
                     SHIFTS.map(s => (
-                      <th key={\`\${d}-\${s.id}\`} className="bg-slate-800/30 p-1.5 text-xs text-center border-b border-slate-700" title={s.name}>
+                      <th key={`${d}-${s.id}`} className="bg-slate-800/30 p-1.5 text-xs text-center border-b border-slate-700" title={s.name}>
                         {s.icon}
                       </th>
                     ))
@@ -165,7 +165,7 @@ const RosterPage = () => {
                     <tr key={zId}>
                       <td className="p-3 text-sm font-medium text-slate-300 sticky left-0 z-10 bg-[#0c1622] border-r border-slate-700">
                         <div className="flex items-center gap-2">
-                          <span className={\`w-2 h-2 rounded-full \${cColor}\`} />
+                          <span className={`w-2 h-2 rounded-full ${cColor}`} />
                           <span className="whitespace-nowrap truncate max-w-[120px]">{z.name}</span>
                         </div>
                       </td>
@@ -183,8 +183,8 @@ const RosterPage = () => {
                           
                           return (
                             <td 
-                              key={\`\${zId}-\${d}-\${s.id}\`} 
-                              className={\`roster-cell p-2 text-center \${statusCls}\`}
+                              key={`${zId}-${d}-${s.id}`} 
+                              className={`roster-cell p-2 text-center ${statusCls}`}
                               onClick={() => openDetail(shiftData)}
                             >
                               {shiftData ? (
@@ -230,7 +230,7 @@ const RosterPage = () => {
               </div>
               <div className="text-right">
                 <div className="text-sm text-slate-400">Staffing</div>
-                <div className={\`text-lg font-mono font-bold \${selectedShift.officers.length >= selectedShift.requiredOfficers ? 'text-emerald-400' : 'text-amber-400'}\`}>
+                <div className={`text-lg font-mono font-bold ${selectedShift.officers.length >= selectedShift.requiredOfficers ? 'text-emerald-400' : 'text-amber-400'}`}>
                   {selectedShift.officers.length} / {selectedShift.requiredOfficers}
                 </div>
               </div>
@@ -254,14 +254,14 @@ const RosterPage = () => {
                             <Shield className="w-4 h-4 text-blue-400" />
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-white">{officer.name || \`ID: \${officer}\`}</div>
+                            <div className="text-sm font-bold text-white">{officer.name || `ID: ${officer}`}</div>
                             {officer.rank && <div className="text-xs text-slate-400">{officer.rank}</div>}
                           </div>
                         </div>
                         {officer.fatigueScore !== undefined && (
                           <div className="flex flex-col items-end">
                             <div className="text-[10px] text-slate-500 uppercase">Fatigue</div>
-                            <div className={\`text-sm font-mono \${officer.fatigueScore > 60 ? 'text-red-400' : officer.fatigueScore > 30 ? 'text-amber-400' : 'text-emerald-400'}\`}>
+                            <div className={`text-sm font-mono ${officer.fatigueScore > 60 ? 'text-red-400' : officer.fatigueScore > 30 ? 'text-amber-400' : 'text-emerald-400'}`}>
                               {officer.fatigueScore}
                             </div>
                           </div>

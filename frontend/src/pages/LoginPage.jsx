@@ -37,21 +37,21 @@ const LoginPage = () => {
     }
   };
 
-  const inputCls = "w-full px-4 py-3 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all duration-200";
+  const inputCls = "w-full px-4 py-3 rounded-xl text-white placeholder:text-slate-500 input-field";
 
   return (
     <div className="min-h-screen w-full bg-[#050a18] flex items-center justify-center px-4 relative overflow-hidden grid-bg">
       {/* Animated Background Orbs */}
-      <div className="absolute top-[-20%] left-[20%] w-[500px] h-[500px] rounded-full bg-blue-600/8 blur-[150px] animate-float" />
-      <div className="absolute bottom-[-10%] right-[15%] w-[400px] h-[400px] rounded-full bg-indigo-600/10 blur-[130px] animate-float" style={{ animationDelay: '1.5s' }} />
-      <div className="absolute top-[40%] left-[-5%] w-[300px] h-[300px] rounded-full bg-cyan-600/6 blur-[100px] animate-float" style={{ animationDelay: '3s' }} />
+      <div className="absolute top-[-20%] left-[20%] w-[500px] h-[500px] rounded-full bg-[var(--surface-tint)] opacity-10 blur-[150px] animate-float" />
+      <div className="absolute bottom-[-10%] right-[15%] w-[400px] h-[400px] rounded-full bg-[var(--primary-container)] opacity-10 blur-[130px] animate-float" style={{ animationDelay: '1.5s' }} />
+      <div className="absolute top-[40%] left-[-5%] w-[300px] h-[300px] rounded-full bg-[var(--surface-tint)] opacity-5 blur-[100px] animate-float" style={{ animationDelay: '3s' }} />
 
       {/* Rotating ring decoration */}
-      <div className="absolute top-[10%] right-[8%] w-32 h-32 border border-slate-700/20 rounded-full" style={{ animation: 'rotate-slow 30s linear infinite' }}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500/60" />
+      <div className="absolute top-[10%] right-[8%] w-32 h-32 border border-white/5 rounded-full" style={{ animation: 'rotate-slow 30s linear infinite' }}>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[var(--surface-tint)]" />
       </div>
-      <div className="absolute bottom-[15%] left-[5%] w-20 h-20 border border-slate-700/15 rounded-full" style={{ animation: 'rotate-slow 20s linear infinite reverse' }}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-indigo-500/60" />
+      <div className="absolute bottom-[15%] left-[5%] w-20 h-20 border border-white/5 rounded-full" style={{ animation: 'rotate-slow 20s linear infinite reverse' }}>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
       </div>
 
       {/* Content */}
@@ -59,14 +59,14 @@ const LoginPage = () => {
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="relative inline-block mb-5">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-blue-500/30 border border-blue-400/30 animate-pulse-glow">
-              <Shield className="w-10 h-10 text-white" />
+            <div className="w-20 h-20 rounded-2xl bg-[var(--surface-container)] flex items-center justify-center shadow-2xl border border-[var(--outline-variant)] animate-pulse-glow">
+              <Shield className="w-10 h-10 text-[var(--surface-tint)] glow-text" />
             </div>
             <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#050a18] flex items-center justify-center">
               <Zap className="w-3 h-3 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 tracking-tight">
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[var(--primary)] to-[var(--surface-tint)] tracking-tight">
             Sentinel
           </h1>
           <p className="text-slate-500 text-sm mt-2 flex items-center justify-center gap-2">
@@ -116,7 +116,7 @@ const LoginPage = () => {
               </div>
             </div>
 
-            <button type="submit" disabled={loading} className="btn-press w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white font-bold text-sm shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2">
+            <button type="submit" disabled={loading} className="btn-primary btn-press w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : isRegister ? (
