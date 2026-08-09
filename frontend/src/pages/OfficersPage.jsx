@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Shield, AlertTriangle, Activity, Search, Filter, Edit, Trash2, Download } from 'lucide-react';
+import { Users, UserPlus, Shield, AlertTriangle, Activity, Search, Filter, Edit, Trash2, SlidersHorizontal } from 'lucide-react';
 import Modal from '../components/Modal';
+import ForceConfigurationModal from '../components/ForceConfigurationModal';
 import { TableSkeleton } from '../components/LoadingSkeleton';
 import { useToast } from '../components/Toast';
 import { officersAPI, zonesAPI } from '../services/api';
@@ -28,6 +29,7 @@ const OfficersPage = () => {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [forceModal, setForceModal] = useState(false);
   const toast = useToast();
 
   const loadData = async () => {
@@ -43,13 +45,14 @@ const OfficersPage = () => {
       ]);
       setOfficers(Array.isArray(offData) ? offData : (offData.data || []));
       setZones(Array.isArray(zoneData) ? zoneData : (zoneData.data || []));
-    } catch (err) {
+    } catch {
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, [fRank, fStatus]);
 
   const openCreate = () => { setEditId(null); setForm(emptyForm); setModal(true); };
@@ -112,8 +115,8 @@ const OfficersPage = () => {
           <p className="text-slate-400 text-sm">Manage officers, view fatigue & force composition.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="inline-flex items-center rounded-xl bg-slate-800 border border-slate-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 transition-all">
-            <Download className="w-4 h-4 mr-2" />Bulk Import
+          <button onClick={() => setForceModal(true)} className="inline-flex items-center rounded-xl bg-slate-800 border border-slate-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 transition-all">
+            <SlidersHorizontal className="w-4 h-4 mr-2" />Configure Force
           </button>
           <button onClick={openCreate} className="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all">
             <UserPlus className="w-4 h-4 mr-2" />Add Officer
@@ -230,6 +233,7 @@ const OfficersPage = () => {
       </div>
 
       {/* Add/Edit Modal */}
+      <ForceConfigurationModal isOpen={forceModal} onClose={() => setForceModal(false)} onConfigured={loadData} />
       <Modal isOpen={modal} onClose={()=>setModal(false)} title={editId?'Edit Personnel':'Add Personnel'}>
         <form onSubmit={submit} className="space-y-4">
           <div><label className="block text-sm font-medium text-slate-300 mb-1.5">Name</label>

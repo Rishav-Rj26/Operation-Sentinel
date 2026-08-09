@@ -121,10 +121,9 @@ router.post('/seed', auth, requireRole('admin', 'dispatcher'), async (req, res, 
     const totalOfficers = officers.length;
 
     // ── 3. Reserve 15% as Standby ───────────────────────
-    const standbyCount = Math.ceil(totalOfficers * 0.15);
-    const standbyOfficers = officers
-      .filter(o => ['SI', 'ASI', 'HeadConstable', 'Constable'].includes(o.rank))
-      .slice(0, standbyCount);
+    const fieldOfficers = officers.filter(o => ['SI', 'ASI', 'HeadConstable', 'Constable'].includes(o.rank));
+    const standbyCount = Math.ceil(fieldOfficers.length * 0.15);
+    const standbyOfficers = fieldOfficers.slice(0, standbyCount);
 
     for (const so of standbyOfficers) {
       so.status = 'standby';
@@ -146,10 +145,15 @@ router.post('/seed', auth, requireRole('admin', 'dispatcher'), async (req, res, 
     // ── 4. Generate 7-day Roster ─────────────────────────
     const refreshedZones = await Zone.find();
     const activeOfficers = await Officer.find({ status: 'active' });
-    const shifts = generateRoster(refreshedZones, activeOfficers, 7);
+    const shifts = generateRoster(refreshedZones, activeOfficers, 30);
 
     if (shifts.length > 0) {
       await Shift.insertMany(shifts);
+      const openingMorning = shifts.filter((shift) => shift.shift_type === 'morning' && shift.date.getTime() === shifts[0].date.getTime());
+      const deployments = openingMorning.flatMap((shift) => shift.assigned_officers.map((officerId) => ({
+        updateOne: { filter: { _id: officerId }, update: { $set: { current_zone_id: shift.zone_id } } },
+      })));
+      if (deployments.length) await Officer.bulkWrite(deployments);
     }
 
     // ── 5. Seed legacy models (Sectors/Units/Incidents) ──

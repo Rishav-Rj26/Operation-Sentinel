@@ -28,13 +28,14 @@ const ZoneConfigPage = () => {
       setLoading(true);
       const res = await zonesAPI.getAll();
       setZones(Array.isArray(res) ? res : (res.data || []));
-    } catch (err) {
+    } catch {
       toast.error('Failed to load zones');
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
 
   const openCreate = () => { setEditId(null); setForm(emptyForm); setModal(true); };

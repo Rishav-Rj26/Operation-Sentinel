@@ -144,6 +144,7 @@ export const officersAPI = {
   update: (id, data) => request(`${API_BASE}/officers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`${API_BASE}/officers/${id}`, { method: 'DELETE' }),
   bulkCreate: (data) => request(`${API_BASE}/officers/bulk`, { method: 'POST', body: JSON.stringify(data) }),
+  configureForce: (composition, replace = true) => request(`${API_BASE}/officers/configure-force`, { method: 'POST', body: JSON.stringify({ composition, replace }) }),
   getStats: () => request(`${API_BASE}/officers/stats`),
 };
 

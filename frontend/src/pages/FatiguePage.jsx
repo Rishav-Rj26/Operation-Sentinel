@@ -29,13 +29,14 @@ const FatiguePage = () => {
       ]);
       setData(dashboard);
       setHighRisk(Array.isArray(hrData) ? hrData : []);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load fatigue data');
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
 
   const handleRecalculate = async () => {

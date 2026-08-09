@@ -4,6 +4,9 @@ const auth = require('../middleware/auth');
 const { requireRole } = require('../middleware/auth');
 const Officer = require('../models/Officer');
 const AuditLog = require('../models/AuditLog');
+const Shift = require('../models/Shift');
+const StandbyPool = require('../models/StandbyPool');
+const { RANKS, FIELD_RANKS } = require('../constants/ranks');
 // Normalize camelCase frontend input → snake_case DB fields
 const normalizeOfficerInput = (body) => {
   const data = { ...body };
@@ -134,6 +137,61 @@ router.post('/bulk', auth, requireRole('admin', 'dispatcher'), async (req, res, 
     // Maybe emit bulk event
     emit(req, 'officers:bulk_created', { count: officers.length });
     res.status(201).json(officers);
+  } catch (err) { next(err); }
+});
+
+// POST /configure-force — create a scalable force from a rank composition.
+// This is deliberately based on operator input, not fixed demo assumptions.
+router.post('/configure-force', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const { composition, replace = false } = req.body;
+    if (!composition || typeof composition !== 'object' || Array.isArray(composition)) {
+      return res.status(400).json({ message: 'Provide a rank-to-count composition object.' });
+    }
+
+    const normalized = Object.fromEntries(RANKS.map((rank) => [rank, Number(composition[rank] || 0)]));
+    const invalid = Object.entries(normalized).find(([, count]) => !Number.isInteger(count) || count < 0 || count > 10000);
+    const totalForce = Object.values(normalized).reduce((sum, count) => sum + count, 0);
+    if (invalid || totalForce < 1) {
+      return res.status(400).json({ message: 'Each rank count must be a whole number from 0 to 10,000 and total force must exceed zero.' });
+    }
+
+    if (replace) {
+      await Promise.all([Shift.deleteMany({}), StandbyPool.deleteMany({}), Officer.deleteMany({})]);
+    } else {
+      // Rebalance the one global reserve pool across the expanded force.
+      await Officer.updateMany({ status: 'standby' }, { $set: { status: 'active' } });
+    }
+
+    const docs = [];
+    for (const [rank, count] of Object.entries(normalized)) {
+      for (let index = 1; index <= count; index += 1) {
+        docs.push({ name: `${rank} ${String(index).padStart(4, '0')}`, rank, status: 'active', fatigue_score: 0 });
+      }
+    }
+    await Officer.insertMany(docs);
+    const configuredOfficers = await Officer.find();
+    const fieldOfficers = configuredOfficers.filter((officer) => FIELD_RANKS.includes(officer.rank));
+    const standbyCount = Math.ceil(fieldOfficers.length * 0.15);
+    const standby = fieldOfficers.slice(0, standbyCount);
+
+    if (standby.length) {
+      await Officer.updateMany({ _id: { $in: standby.map((officer) => officer._id) } }, { $set: { status: 'standby' } });
+    }
+    await StandbyPool.deleteMany({});
+    await StandbyPool.create({
+      officers: standby.map((officer) => officer._id),
+      rank_breakdown: standby.reduce((counts, officer) => ({ ...counts, [officer.rank]: (counts[officer.rank] || 0) + 1 }), {}),
+      total_reserved: standby.length,
+    });
+
+    await AuditLog.create({
+      actor: req.user?.email || 'system',
+      action: 'configure_force',
+      after_state: { totalForce: configuredOfficers.length, composition: normalized, standby: standby.length, replace },
+    });
+    emit(req, 'force:configured', { totalForce: configuredOfficers.length, standby: standby.length });
+    res.status(201).json({ totalForce: configuredOfficers.length, composition: normalized, standby: standby.length, active: configuredOfficers.length - standby.length });
   } catch (err) { next(err); }
 });
 

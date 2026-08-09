@@ -82,6 +82,7 @@ router.put('/:id', auth, requireRole('admin', 'dispatcher'), async (req, res, ne
       after_state: zone.toObject()
     });
 
+    let dynamicLoad = null;
     // Check if D increased
     if (zone.density_score > beforeState.density_score) {
       zone.zscore = calculateZScore(zone.size_score, zone.density_score);
@@ -99,15 +100,25 @@ router.put('/:id', auth, requireRole('admin', 'dispatcher'), async (req, res, ne
       if (deltaT > 0) {
         const allOfficers = await Officer.find();
         const incident = await resolveDeficit(zone, allZones, allOfficers, deltaT);
+        dynamicLoad = {
+          required: newRequired,
+          currentDeployed,
+          deltaT,
+          status: incident.status,
+          resolutionSteps: incident.resolution_steps_taken,
+          incidentId: incident._id,
+        };
         emit(req, 'zone:deficit', { zone_id: zone._id, deltaT });
         if (incident.status === 'escalated') {
           emit(req, 'zone:alert', incident);
         }
+      } else {
+        dynamicLoad = { required: newRequired, currentDeployed, deltaT: 0, status: 'resolved', resolutionSteps: [] };
       }
     }
 
     emit(req, 'zone:updated', zone);
-    res.json(zone);
+    res.json({ ...zone.toJSON(), dynamicLoad });
   } catch (err) { next(err); }
 });
 

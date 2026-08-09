@@ -7,20 +7,23 @@ import HeatMap from '../components/HeatMap';
 import ResourceAllocation from '../components/ResourceAllocation';
 import LiveFeed from '../components/LiveFeed';
 import ReportGenerator from '../components/ReportGenerator';
+import ZoneOperations3D from '../components/ZoneOperations3D';
+import CommandActions from '../components/CommandActions';
 import { StatsSkeleton, HeatMapSkeleton, UnitListSkeleton } from '../components/LoadingSkeleton';
 import { useToast } from '../components/Toast';
 import { useSocket } from '../context/SocketContext';
 import Modal from '../components/Modal';
-import { sectorsAPI, unitsAPI, incidentsAPI, seedAPI, statsAPI } from '../services/api';
+import { zonesAPI, unitsAPI, incidentsAPI, seedAPI, statsAPI } from '../services/api';
 
 const DashboardPage = () => {
-  const [sectors, setSectors] = useState(null);
+  const [zones, setZones] = useState(null);
   const [units, setUnits] = useState(null);
   const [stats, setStats] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [selectedZone, setSelectedZone] = useState(null);
   const [dispatchForm, setDispatchForm] = useState({
     title: '', severity: 'high', location: '', description: '',
   });
@@ -31,10 +34,10 @@ const DashboardPage = () => {
 
   const fetchData = async () => {
     try {
-      const [sectorsData, unitsData, statsData, incData] = await Promise.all([
-        sectorsAPI.getAll(), unitsAPI.getAll(), statsAPI.getStats(), incidentsAPI.getAll(),
+      const [zoneData, unitsData, statsData, incData] = await Promise.all([
+        zonesAPI.getAll(), unitsAPI.getAll(), statsAPI.getStats(), incidentsAPI.getAll(),
       ]);
-      setSectors(sectorsData);
+      setZones(zoneData);
       setUnits(unitsData);
       setStats(statsData);
       setIncidents(incData);
@@ -113,7 +116,7 @@ const DashboardPage = () => {
 
   return (
     <>
-      <main className="w-full max-w-[1600px] mx-auto px-6 lg:px-10 py-8 space-y-8 pb-16">
+      <main className="command-dashboard command-bg w-full max-w-[1600px] mx-auto px-5 lg:px-7 py-6 space-y-6 pb-12">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 animate-slide-up">
           <div>
@@ -127,8 +130,8 @@ const DashboardPage = () => {
                 <span className="text-xs font-semibold text-blue-400">Live Tracking</span>
               </div>
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-white">Command Center</h1>
-            <p className="text-slate-500 text-sm mt-1">Real-time incident monitoring & tactical resource deployment</p>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Sentinel Command</h1>
+            <p className="text-slate-500 text-xs mt-1 uppercase tracking-[.13em]">Real-time deployment and force readiness console</p>
           </div>
           <div className="flex gap-3 flex-wrap">
             <button onClick={handleSeed} disabled={seeding} className="btn-press inline-flex items-center rounded-xl glass-card px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white transition-all disabled:opacity-50">
@@ -160,8 +163,18 @@ const DashboardPage = () => {
           {loading ? <StatsSkeleton /> : <StatsGrid stats={stats} />}
         </div>
 
-        {/* Map & Resources */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 animate-slide-up stagger-2" style={{ animationFillMode: 'both' }}>
+        {/* Live operations — 3D topology and incident resolution */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 animate-slide-up stagger-2" style={{ animationFillMode: 'both' }}>
+          <div className="lg:col-span-3">
+            <ZoneOperations3D zones={zones || []} onSelect={setSelectedZone} />
+          </div>
+          <div className="lg:col-span-2">
+            <CommandActions zones={zones || []} selectedZone={selectedZone} onZoneChange={setSelectedZone} onDataChanged={fetchData} />
+          </div>
+        </div>
+
+        {/* Coverage & resources */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 animate-slide-up stagger-2" style={{ animationFillMode: 'both' }}>
           {loading ? (
             <>
               <div className="lg:col-span-3"><HeatMapSkeleton /></div>
@@ -170,7 +183,12 @@ const DashboardPage = () => {
           ) : (
             <>
               <div className="lg:col-span-3">
-                <HeatMap sectors={sectors} />
+                <HeatMap sectors={(zones || []).map((zone) => ({
+                  ...zone,
+                  sectorId: zone._id,
+                  intensity: (zone.densityScore ?? zone.density_score ?? 0) * 10,
+                  activeIncidents: 0,
+                }))} />
               </div>
               <div className="lg:col-span-2">
                 <ResourceAllocation units={units} onViewAll={() => navigate('/units')} />

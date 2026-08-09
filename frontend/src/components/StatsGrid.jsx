@@ -14,8 +14,8 @@ const StatsGrid = ({ stats }) => {
       trendDir: incidentTrend > 0 ? 'up' : 'down',
       trendGood: incidentTrend <= 0, // fewer incidents is good
       icon: Activity,
-      gradient: 'from-red-500 to-orange-500',
-      glow: 'shadow-red-500/20',
+      gradient: 'bg-red-500/15 text-red-400',
+      glow: '',
     },
     {
       label: 'Units Deployed',
@@ -24,8 +24,8 @@ const StatsGrid = ({ stats }) => {
       trendDir: 'down',
       trendGood: true,
       icon: Car,
-      gradient: 'from-blue-500 to-cyan-500',
-      glow: 'shadow-blue-500/20',
+      gradient: 'bg-sky-500/15 text-sky-400',
+      glow: '',
     },
     {
       label: 'Resolved Today',
@@ -34,8 +34,8 @@ const StatsGrid = ({ stats }) => {
       trendDir: resolvedTrend > 0 ? 'up' : 'down',
       trendGood: resolvedTrend >= 0, // more resolved is good
       icon: Users,
-      gradient: 'from-emerald-500 to-teal-500',
-      glow: 'shadow-emerald-500/20',
+      gradient: 'bg-emerald-500/15 text-emerald-400',
+      glow: '',
     },
     {
       label: 'Avg Response',
@@ -44,8 +44,8 @@ const StatsGrid = ({ stats }) => {
       trendDir: 'down',
       trendGood: true,
       icon: Clock,
-      gradient: 'from-violet-500 to-purple-500',
-      glow: 'shadow-violet-500/20',
+      gradient: 'bg-violet-500/15 text-violet-400',
+      glow: '',
     },
   ];
 
@@ -54,12 +54,12 @@ const StatsGrid = ({ stats }) => {
       {cards.map((card, idx) => (
         <div
           key={card.label}
-          className="glass-card rounded-2xl p-5 group hover:-translate-y-1 transition-all duration-300 card-lift animate-slide-up"
+          className="glass-card rounded-xl p-5 group transition-colors duration-200 animate-slide-up"
           style={{ animationDelay: `${idx * 0.05}s`, animationFillMode: 'both' }}
         >
           <div className="flex items-start justify-between mb-4">
-            <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center shadow-lg ${card.glow} group-hover:scale-110 transition-transform duration-300`}>
-              <card.icon className="w-5 h-5 text-white" />
+            <div className={`w-11 h-11 rounded-lg ${card.gradient} flex items-center justify-center ${card.glow} transition-transform duration-200`}>
+              <card.icon className="w-5 h-5" />
             </div>
             {card.trend && (
               <div className={`flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${

@@ -32,13 +32,14 @@ const RosterPage = () => {
       ]);
       setRoster(Array.isArray(rData) ? rData : (rData.data || []));
       setZones(Array.isArray(zData) ? zData : (zData.data || []));
-    } catch (err) {
+    } catch {
       toast.error('Failed to load roster data');
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
 
   const handleGenerate = async () => {
@@ -47,7 +48,7 @@ const RosterPage = () => {
       await schedulerAPI.generate(30);
       toast.success('Roster generated successfully');
       loadData();
-    } catch (err) {
+    } catch {
       toast.error('Failed to generate roster');
     } finally {
       setGenerating(false);

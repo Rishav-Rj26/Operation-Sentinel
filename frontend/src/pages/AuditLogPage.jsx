@@ -42,13 +42,15 @@ const AuditLogPage = () => {
       setLogs(logData.data || []);
       setPagination(logData.pagination || { page: 1, pages: 1, total: 0 });
       setStats(Array.isArray(statsData) ? statsData : []);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load audit logs');
     } finally {
       setLoading(false);
     }
   };
 
+  // Reloading is intentionally keyed to the active filter; loadData also drives pagination.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, [filterAction]);
 
   const toggleExpand = (id) => {

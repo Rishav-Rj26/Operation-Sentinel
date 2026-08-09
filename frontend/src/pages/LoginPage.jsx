@@ -40,33 +40,22 @@ const LoginPage = () => {
   const inputCls = "w-full px-4 py-3 rounded-xl text-white placeholder:text-slate-500 input-field";
 
   return (
-    <div className="min-h-screen w-full bg-[#050a18] flex items-center justify-center px-4 relative overflow-hidden grid-bg">
-      {/* Animated Background Orbs */}
-      <div className="absolute top-[-20%] left-[20%] w-[500px] h-[500px] rounded-full bg-[var(--surface-tint)] opacity-10 blur-[150px] animate-float" />
-      <div className="absolute bottom-[-10%] right-[15%] w-[400px] h-[400px] rounded-full bg-[var(--primary-container)] opacity-10 blur-[130px] animate-float" style={{ animationDelay: '1.5s' }} />
-      <div className="absolute top-[40%] left-[-5%] w-[300px] h-[300px] rounded-full bg-[var(--surface-tint)] opacity-5 blur-[100px] animate-float" style={{ animationDelay: '3s' }} />
-
-      {/* Rotating ring decoration */}
-      <div className="absolute top-[10%] right-[8%] w-32 h-32 border border-white/5 rounded-full" style={{ animation: 'rotate-slow 30s linear infinite' }}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[var(--surface-tint)]" />
-      </div>
-      <div className="absolute bottom-[15%] left-[5%] w-20 h-20 border border-white/5 rounded-full" style={{ animation: 'rotate-slow 20s linear infinite reverse' }}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
-      </div>
+    <div className="min-h-screen w-full bg-[#0b1220] flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-1 bg-sky-500" />
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-md animate-scale-in">
         {/* Logo */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <div className="relative inline-block mb-5">
-            <div className="w-20 h-20 rounded-2xl bg-[var(--surface-container)] flex items-center justify-center shadow-2xl border border-[var(--outline-variant)] animate-pulse-glow">
-              <Shield className="w-10 h-10 text-[var(--surface-tint)] glow-text" />
+            <div className="w-16 h-16 rounded-xl bg-sky-500 flex items-center justify-center border border-sky-400">
+              <Shield className="w-8 h-8 text-slate-950" />
             </div>
-            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#050a18] flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#0b1220] flex items-center justify-center">
               <Zap className="w-3 h-3 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[var(--primary)] to-[var(--surface-tint)] tracking-tight">
+          <h1 className="text-3xl font-bold text-slate-100 tracking-tight">
             Sentinel
           </h1>
           <p className="text-slate-500 text-sm mt-2 flex items-center justify-center gap-2">
@@ -76,7 +65,7 @@ const LoginPage = () => {
         </div>
 
         {/* Form Card */}
-        <div className="glass-card rounded-2xl p-7">
+        <div className="glass-card rounded-xl p-7">
           <form onSubmit={handleSubmit} className="space-y-5">
             {isRegister && (
               <div className="space-y-4 animate-slide-up">
@@ -127,7 +116,7 @@ const LoginPage = () => {
             </button>
           </form>
 
-          <div className="neon-line mt-6 mb-5 rounded-full" />
+          <div className="border-t border-slate-800 mt-6 mb-5" />
 
           <button onClick={() => setIsRegister(!isRegister)} className="w-full text-center text-sm text-slate-500 hover:text-blue-400 transition-colors duration-200">
             {isRegister ? 'Already have an account? Sign in' : "Don't have an account? Register"}

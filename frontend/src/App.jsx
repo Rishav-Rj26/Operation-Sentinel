@@ -57,16 +57,7 @@ const AppLayout = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-[#050a18] text-slate-200 font-sans selection:bg-blue-500/30 grid-bg">
-      {/* Ambient Background */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-15%] left-[10%] w-[600px] h-[600px] rounded-full bg-blue-900/10 blur-[150px]" />
-        <div className="absolute bottom-[-15%] right-[5%] w-[500px] h-[500px] rounded-full bg-indigo-900/10 blur-[130px]" />
-        <div className="absolute top-[50%] right-[30%] w-[300px] h-[300px] rounded-full bg-purple-900/5 blur-[100px]" />
-      </div>
-
-      {/* Neon top line */}
-      <div className="fixed top-0 left-0 right-0 z-50 neon-line" />
+    <div className="min-h-screen w-full bg-[#0b1220] text-slate-200 font-sans selection:bg-sky-500/30">
 
       <Navbar status={status} incidents={incidents} />
 
