@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
 
@@ -11,33 +10,36 @@ export const useToast = () => {
 };
 
 const ICONS = {
-  success: CheckCircle,
-  error: XCircle,
-  warning: AlertTriangle,
-  info: Info,
+  success: 'check_circle',
+  error: 'error',
+  warning: 'warning',
+  info: 'info',
 };
 
 const COLORS = {
-  success: 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400',
-  error: 'border-red-500/50 bg-red-500/10 text-red-400',
-  warning: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-400',
-  info: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
+  success: 'border-success/50 bg-success/10 text-success shadow-[0_0_15px_rgba(0,200,83,0.3)]',
+  error: 'border-crimson/50 bg-crimson/10 text-crimson shadow-[0_0_15px_rgba(213,0,0,0.3)]',
+  warning: 'border-amber/50 bg-amber/10 text-amber shadow-[0_0_15px_rgba(255,191,0,0.3)]',
+  info: 'border-primary/50 bg-primary/10 text-primary shadow-[0_0_15px_rgba(0,242,255,0.3)]',
 };
 
 const Toast = ({ id, message, type = 'info', onDismiss }) => {
-  const Icon = ICONS[type];
-
   useEffect(() => {
     const timer = setTimeout(() => onDismiss(id), 4000);
     return () => clearTimeout(timer);
   }, [id, onDismiss]);
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl animate-slide-in-right ${COLORS[type]}`}>
-      <Icon className="w-5 h-5 flex-shrink-0" />
-      <span className="text-sm font-medium flex-1">{message}</span>
-      <button onClick={() => onDismiss(id)} className="p-0.5 hover:opacity-70 transition-opacity">
-        <X className="w-4 h-4" />
+    <div className={`flex items-start gap-3 px-4 py-3 rounded border backdrop-blur-md animate-slide-in-right ${COLORS[type]}`}>
+      <span className="material-symbols-outlined text-[20px] flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
+        {ICONS[type]}
+      </span>
+      <div className="flex-1 min-w-0 pt-0.5">
+        <p className="font-label-caps text-[10px] uppercase tracking-widest opacity-80 mb-0.5">{type}</p>
+        <p className="font-data-md text-[13px] text-white leading-snug">{message}</p>
+      </div>
+      <button onClick={() => onDismiss(id)} className="p-0.5 hover:bg-white/10 rounded transition-colors flex-shrink-0 mt-1">
+        <span className="material-symbols-outlined text-[16px]">close</span>
       </button>
     </div>
   );
@@ -66,9 +68,11 @@ export const ToastProvider = ({ children }) => {
     <ToastContext.Provider value={toast}>
       {children}
       {/* Toast Container */}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-80">
+      <div className="fixed top-20 right-6 z-[2000] flex flex-col gap-3 w-80 pointer-events-none">
         {toasts.map((t) => (
-          <Toast key={t.id} {...t} onDismiss={dismiss} />
+          <div key={t.id} className="pointer-events-auto">
+            <Toast {...t} onDismiss={dismiss} />
+          </div>
         ))}
       </div>
     </ToastContext.Provider>

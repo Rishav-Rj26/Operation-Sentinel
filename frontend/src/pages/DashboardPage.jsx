@@ -1,48 +1,30 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Database, Activity, TrendingUp, Eye, Wifi, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-import StatsGrid from '../components/StatsGrid';
-import HeatMap from '../components/HeatMap';
-import ResourceAllocation from '../components/ResourceAllocation';
-import LiveFeed from '../components/LiveFeed';
-import ReportGenerator from '../components/ReportGenerator';
-import ZoneOperations3D from '../components/ZoneOperations3D';
-import CommandActions from '../components/CommandActions';
-import { StatsSkeleton, HeatMapSkeleton, UnitListSkeleton } from '../components/LoadingSkeleton';
-import { useToast } from '../components/Toast';
+import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import Modal from '../components/Modal';
-import { zonesAPI, unitsAPI, incidentsAPI, seedAPI, statsAPI } from '../services/api';
+import { zonesAPI, statsAPI, incidentsAPI } from '../services/api';
+import ZoneGraph from '../components/ZoneGraph';
 
 const DashboardPage = () => {
-  const [zones, setZones] = useState(null);
-  const [units, setUnits] = useState(null);
+  const [zones, setZones] = useState([]);
   const [stats, setStats] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showDispatchModal, setShowDispatchModal] = useState(false);
-  const [seeding, setSeeding] = useState(false);
-  const [selectedZone, setSelectedZone] = useState(null);
-  const [dispatchForm, setDispatchForm] = useState({
-    title: '', severity: 'high', location: '', description: '',
-  });
-
-  const toast = useToast();
+  
+  const { user } = useAuth();
+  const { connected } = useSocket();
   const navigate = useNavigate();
-  const { socket, connected } = useSocket();
 
   const fetchData = async () => {
     try {
-      const [zoneData, unitsData, statsData, incData] = await Promise.all([
-        zonesAPI.getAll(), unitsAPI.getAll(), statsAPI.getStats(), incidentsAPI.getAll(),
+      const [zoneData, statsData, incData] = await Promise.all([
+        zonesAPI.getAll(), statsAPI.getStats(), incidentsAPI.getAll(),
       ]);
       setZones(zoneData);
-      setUnits(unitsData);
       setStats(statsData);
-      setIncidents(incData);
-    } catch {
-      toast.error('Failed to fetch dashboard data');
+      setIncidents(incData.slice(0, 8)); // Just recent ones for the feed
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -52,186 +34,154 @@ const DashboardPage = () => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, []); // eslint-disable-line
+  }, []);
 
-  // ── Socket.io real-time listeners ─────────────────────
-  useEffect(() => {
-    if (!socket) return;
-    const refresh = () => fetchData();
-    socket.on('incident:created', refresh);
-    socket.on('incident:updated', refresh);
-    socket.on('incident:deleted', refresh);
-    socket.on('unit:created', refresh);
-    socket.on('unit:updated', refresh);
-    socket.on('data:seeded', refresh);
-    return () => {
-      socket.off('incident:created', refresh);
-      socket.off('incident:updated', refresh);
-      socket.off('incident:deleted', refresh);
-      socket.off('unit:created', refresh);
-      socket.off('unit:updated', refresh);
-      socket.off('data:seeded', refresh);
-    };
-  }, [socket]); // eslint-disable-line
-
-  const handleDispatch = async (e) => {
-    e.preventDefault();
-    try {
-      // Attach GPS coords if available
-      const payload = { ...dispatchForm };
-      if (navigator.geolocation) {
-        try {
-          const pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 }));
-          payload.latitude = pos.coords.latitude;
-          payload.longitude = pos.coords.longitude;
-        } catch { void 0; } // GPS optional
-      }
-      await incidentsAPI.create(payload);
-      toast.success('Emergency incident dispatched!');
-      setShowDispatchModal(false);
-      setDispatchForm({ title: '', severity: 'high', location: '', description: '' });
-    } catch (err) { toast.error(err.message); }
+  // Format time for activity feed
+  const formatTime = (isoString) => {
+    const d = new Date(isoString);
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}.${Math.floor(d.getMilliseconds()/10).toString().padStart(2, '0')}`;
   };
-
-  const handleSeed = async () => {
-    setSeeding(true);
-    try {
-      // Send user's GPS so seed data spreads around their real location
-      let baseLat, baseLng;
-      if (navigator.geolocation) {
-        try {
-          const pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 }));
-          baseLat = pos.coords.latitude;
-          baseLng = pos.coords.longitude;
-        } catch { void 0; } // fallback to Delhi
-      }
-      const result = await seedAPI.seed({ baseLat, baseLng, scale: 'micro' });
-      const c = result.counts;
-      toast.success(`Seeded — ${c.zones} zones, ${c.officers} officers, ${c.shifts} shifts, ${c.standby} standby`);
-    } catch (err) { toast.error(err.message); }
-    finally { setSeeding(false); }
-  };
-
-  const inputCls = "w-full px-4 py-3 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all";
 
   return (
-    <>
-      <main className="command-dashboard command-bg w-full max-w-[1600px] mx-auto px-5 lg:px-7 py-6 space-y-6 pb-12">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 animate-slide-up">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${connected ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-yellow-500/10 border-yellow-500/20'} border`}>
-                <Wifi className={`w-3.5 h-3.5 ${connected ? 'text-emerald-400' : 'text-yellow-400'}`} />
-                <span className={`text-xs font-semibold ${connected ? 'text-emerald-400' : 'text-yellow-400'}`}>{connected ? 'Real-time Connected' : 'Connecting...'}</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
-                <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-xs font-semibold text-blue-400">Live Tracking</span>
-              </div>
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Sentinel Command</h1>
-            <p className="text-slate-500 text-xs mt-1 uppercase tracking-[.13em]">Real-time deployment and force readiness console</p>
-          </div>
-          <div className="flex gap-3 flex-wrap">
-            <button onClick={handleSeed} disabled={seeding} className="btn-press inline-flex items-center rounded-xl glass-card px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white transition-all disabled:opacity-50">
-              <Database className={`w-4 h-4 mr-2 ${seeding ? 'animate-spin' : ''}`} />
-              {seeding ? 'Seeding...' : 'Seed DB'}
-            </button>
-            <button onClick={() => setShowDispatchModal(true)} className="btn-press group inline-flex items-center rounded-xl bg-gradient-to-r from-red-600 via-orange-600 to-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-xl shadow-red-500/20 hover:shadow-red-500/40 hover:-translate-y-0.5 transition-all duration-300">
-              <AlertTriangle className="w-4 h-4 mr-2 group-hover:animate-pulse" />
-              Dispatch Emergency
-            </button>
+    <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-background">
+      
+      {/* TopAppBar */}
+      <header className="bg-surface/10 backdrop-blur-lg border-b border-surface-tint/20 shadow-[0_0_15px_rgba(0,219,231,0.1)] flex justify-between items-center w-full px-margin-desktop h-16 shrink-0 z-30">
+        <div className="flex items-center gap-6">
+          <h2 className="font-headline-lg text-headline-lg tracking-tighter text-surface-tint drop-shadow-[0_0_8px_rgba(0,219,231,0.6)]">SENTINEL_CMD_V4</h2>
+          <div className="flex items-center gap-2 px-3 py-1 bg-surface-container-highest/50 border border-white/10 rounded-sm font-label-caps text-label-caps text-on-surface-variant">
+            <span className={`w-2 h-2 rounded-full ${connected ? 'bg-surface-tint' : 'bg-amber'} block animate-pulse`}></span>
+            {connected ? 'LIVE TELEMETRY' : 'OFFLINE'}
           </div>
         </div>
-
-        {/* Quick Actions Bar */}
-        <div className="flex items-center gap-3 flex-wrap animate-slide-up stagger-1" style={{ animationFillMode: 'both' }}>
-          <button onClick={() => navigate('/incidents?severity=critical')} className="btn-press inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/20 transition-all group">
-            <Zap className="w-3.5 h-3.5 group-hover:animate-pulse" />
-            View Critical ({incidents.filter(i => i.severity === 'critical' && i.status !== 'closed').length})
+        <div className="flex items-center gap-4">
+          <button className="text-on-surface-variant hover:text-primary transition-colors duration-200 scale-95 active:opacity-80 p-2">
+            <span className="material-symbols-outlined">sensors</span>
           </button>
-          <button onClick={() => navigate('/incidents?status=responding')} className="btn-press inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-semibold hover:bg-yellow-500/20 transition-all">
-            <Eye className="w-3.5 h-3.5" />
-            Responding ({incidents.filter(i => i.status === 'responding').length})
+          <button onClick={() => navigate('/audit')} className="text-on-surface-variant hover:text-primary transition-colors duration-200 scale-95 active:opacity-80 p-2">
+            <span className="material-symbols-outlined">memory</span>
           </button>
-          <ReportGenerator stats={stats} incidents={incidents} units={units} />
-        </div>
-
-        {/* Stats */}
-        <div className="animate-slide-up stagger-1" style={{ animationFillMode: 'both' }}>
-          {loading ? <StatsSkeleton /> : <StatsGrid stats={stats} />}
-        </div>
-
-        {/* Live operations — 3D topology and incident resolution */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 animate-slide-up stagger-2" style={{ animationFillMode: 'both' }}>
-          <div className="lg:col-span-3">
-            <ZoneOperations3D zones={zones || []} onSelect={setSelectedZone} />
-          </div>
-          <div className="lg:col-span-2">
-            <CommandActions zones={zones || []} selectedZone={selectedZone} onZoneChange={setSelectedZone} onDataChanged={fetchData} />
+          <button onClick={() => navigate('/map')} className="text-on-surface-variant hover:text-primary transition-colors duration-200 scale-95 active:opacity-80 p-2 relative">
+            <span className="material-symbols-outlined">satellite_alt</span>
+          </button>
+          <div className="h-8 w-px bg-white/10 mx-2"></div>
+          <div className="w-8 h-8 rounded-sm bg-primary-container/20 border border-surface-tint/50 flex items-center justify-center">
+            <span className="material-symbols-outlined text-[18px] text-surface-tint">person</span>
           </div>
         </div>
+      </header>
 
-        {/* Coverage & resources */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 animate-slide-up stagger-2" style={{ animationFillMode: 'both' }}>
-          {loading ? (
-            <>
-              <div className="lg:col-span-3"><HeatMapSkeleton /></div>
-              <div className="lg:col-span-2"><UnitListSkeleton /></div>
-            </>
-          ) : (
-            <>
-              <div className="lg:col-span-3">
-                <HeatMap sectors={(zones || []).map((zone) => ({
-                  ...zone,
-                  sectorId: zone._id,
-                  intensity: (zone.densityScore ?? zone.density_score ?? 0) * 10,
-                  activeIncidents: 0,
-                }))} />
-              </div>
-              <div className="lg:col-span-2">
-                <ResourceAllocation units={units} onViewAll={() => navigate('/units')} />
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Live Activity Feed */}
-        <div className="animate-slide-up stagger-3" style={{ animationFillMode: 'both' }}>
-          <LiveFeed incidents={incidents} />
-        </div>
-      </main>
-
-      {/* Dispatch Modal */}
-      <Modal isOpen={showDispatchModal} onClose={() => setShowDispatchModal(false)} title="🚨 Dispatch Emergency Incident">
-        <form onSubmit={handleDispatch} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Incident Title</label>
-            <input type="text" value={dispatchForm.title} onChange={(e) => setDispatchForm({ ...dispatchForm, title: e.target.value })} required placeholder="e.g. Armed Robbery in Progress" className={inputCls} />
+      {/* Canvas Area */}
+      <div className="flex-1 p-gutter flex gap-gutter overflow-hidden relative">
+        
+        {/* Central Visualization: Node Graph */}
+        <div className="flex-1 bg-surface/30 border border-surface-tint/20 shadow-[0_0_20px_rgba(0,219,231,0.05)] relative overflow-hidden flex items-center justify-center">
+          
+          <div className="corner-bracket-tl"></div>
+          <div className="corner-bracket-tr"></div>
+          <div className="corner-bracket-bl"></div>
+          <div className="corner-bracket-br"></div>
+          
+          <div className="absolute top-4 left-4 flex flex-col gap-1 z-10">
+            <h3 className="font-label-caps text-label-caps text-surface-tint/80 tracking-widest">ZONE ADJACENCY NETWORK</h3>
+            <span className="font-data-md text-[10px] text-on-surface-variant/50">COORD: [42.11, -71.05] // S-LINK ACTIVE</span>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Severity</label>
-              <select value={dispatchForm.severity} onChange={(e) => setDispatchForm({ ...dispatchForm, severity: e.target.value })} className={inputCls}>
-                <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Location</label>
-              <input type="text" value={dispatchForm.location} onChange={(e) => setDispatchForm({ ...dispatchForm, location: e.target.value })} required placeholder="Downtown Market" className={inputCls} />
+
+          <ZoneGraph zones={zones} />
+
+          <div className="absolute bottom-4 right-4 flex gap-4 bg-surface/50 p-2 border border-surface-tint/20 shadow-[0_0_10px_rgba(0,219,231,0.1)] backdrop-blur z-10 text-[10px] font-data-md">
+            <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-none bg-surface-tint"></div><span className="text-surface-tint/70">NOMINAL</span></div>
+            <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-none bg-white/50"></div><span className="text-white/50">ELEVATED</span></div>
+            <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-none bg-[#ff5252] animate-pulse-critical"></div><span className="text-[#ff5252]/70">CRITICAL</span></div>
+          </div>
+        </div>
+
+        {/* Right Sidebar / Telemetry */}
+        <div className="w-80 flex flex-col gap-gutter shrink-0">
+          
+          {/* Stat Cards */}
+          <div className="bg-surface/20 border border-surface-tint/20 shadow-[0_0_15px_rgba(0,219,231,0.05)] p-4 flex flex-col gap-1 relative">
+            <div className="corner-bracket-tl"></div>
+            <div className="corner-bracket-tr"></div>
+            <div className="corner-bracket-bl"></div>
+            <div className="corner-bracket-br"></div>
+            <span className="font-label-caps text-label-caps text-on-surface-variant flex justify-between tracking-widest">
+              TOTAL FORCE <span className="material-symbols-outlined text-[14px]">group</span>
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="font-data-md text-[32px] leading-none text-on-surface">{loading ? '...' : (stats?.totalOfficers || 0)}</span>
+              <span className="font-data-md text-[10px] text-surface-tint animate-bitstream">0101</span>
             </div>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Description</label>
-            <textarea value={dispatchForm.description} onChange={(e) => setDispatchForm({ ...dispatchForm, description: e.target.value })} rows={3} placeholder="Describe the incident..." className={`${inputCls} resize-none`} />
+
+          <div className="bg-surface/20 border border-surface-tint/20 shadow-[0_0_15px_rgba(0,219,231,0.05)] p-4 flex flex-col gap-1 relative overflow-hidden">
+            <div className="corner-bracket-tl"></div>
+            <div className="corner-bracket-tr"></div>
+            <div className="corner-bracket-bl"></div>
+            <div className="corner-bracket-br"></div>
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 blur-xl rounded-full"></div>
+            <span className="font-label-caps text-label-caps text-on-surface-variant flex justify-between tracking-widest">
+              GLOBAL STANDBY POOL <span className="material-symbols-outlined text-[14px] text-white/50">warning</span>
+            </span>
+            <span className="font-data-md text-[32px] leading-none text-on-surface">{loading ? '...' : (stats?.standbyOfficers || 0)}</span>
+            <div className="w-full h-[1px] bg-white/10 mt-2 overflow-hidden relative">
+              <div className="h-full bg-surface-tint w-[15%] absolute top-0 left-0"></div>
+            </div>
           </div>
-          <button type="submit" className="btn-press w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold shadow-xl shadow-red-500/20 hover:shadow-red-500/40 transition-all">
-            🚨 Dispatch Now
-          </button>
-        </form>
-      </Modal>
-    </>
+
+          {/* Activity Feed */}
+          <div className="flex-1 bg-surface-container-low/30 backdrop-blur-md border border-surface-tint/20 shadow-[0_0_15px_rgba(0,219,231,0.05)] flex flex-col overflow-hidden relative">
+            <div className="corner-bracket-tl"></div>
+            <div className="corner-bracket-tr"></div>
+            <div className="corner-bracket-bl"></div>
+            <div className="corner-bracket-br"></div>
+            
+            <div className="p-3 border-b border-surface-tint/20 flex justify-between items-center bg-surface-tint/5">
+              <span className="font-label-caps text-label-caps text-surface-tint tracking-widest">LIVE TELEMETRY FEED</span>
+              <span className="flex h-1.5 w-1.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full bg-surface-tint opacity-75"></span>
+                <span className="relative inline-flex h-1.5 w-1.5 bg-surface-tint"></span>
+              </span>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-2 font-data-md text-[11px] flex flex-col gap-1">
+              {incidents.length === 0 && (
+                <div className="py-1.5 px-2 hover:bg-white/5 flex gap-3 transition-colors border-l border-transparent">
+                  <span className="text-on-surface-variant/50 w-[70px] shrink-0">--:--:--</span>
+                  <span className="text-on-surface/80 uppercase">SYSTEM AWAITING EVENTS</span>
+                </div>
+              )}
+              {incidents.map((inc) => (
+                <div 
+                  key={inc._id}
+                  className={`py-1.5 px-2 flex gap-3 transition-colors ${
+                    inc.severity === 'critical' || inc.severity === 'high' 
+                    ? 'bg-error/10 border-l border-error text-error' 
+                    : 'hover:bg-white/5 border-l border-transparent text-on-surface/80'
+                  }`}
+                >
+                  <span className={`${inc.severity === 'critical' ? 'opacity-70' : 'text-on-surface-variant/50'} w-[70px] shrink-0`}>
+                    {formatTime(inc.createdAt)}
+                  </span>
+                  <span className="uppercase line-clamp-1">{inc.title} - {inc.location}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-surface-container-lowest/40 backdrop-blur-md border-t border-surface-tint/20 shadow-[0_-5px_15px_rgba(0,219,231,0.05)] w-full z-50 flex justify-between items-center px-margin-desktop py-2 shrink-0">
+        <div className="flex gap-6 font-data-md text-[11px] text-on-surface-variant/70 uppercase">
+          <span>SYSTEM_STABLE // LATENCY: 14MS // ENCRYPTION: ACTIVE</span>
+        </div>
+        <div className="flex gap-4 font-data-md text-[11px]">
+          <span className="text-on-surface-variant/70 hover:text-surface-tint transition-colors cursor-pointer uppercase">Diagnostic Log</span>
+          <span className="text-on-surface-variant/70 hover:text-surface-tint transition-colors cursor-pointer uppercase">Relay Status</span>
+        </div>
+      </footer>
+    </div>
   );
 };
 

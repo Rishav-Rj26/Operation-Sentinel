@@ -1,25 +1,12 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Plus, Search, Trash2, Edit3, Clock, MapPin, List, GitBranch } from 'lucide-react';
 import Modal from '../components/Modal';
 import IncidentTimeline from '../components/IncidentTimeline';
-import { TableSkeleton } from '../components/LoadingSkeleton';
+import DataTable from '../components/DataTable';
 import { useToast } from '../components/Toast';
 import { incidentsAPI } from '../services/api';
 import { useSearchParams } from 'react-router-dom';
 
-const SEV_CLR = {
-  low: 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20',
-  medium: 'bg-yellow-500/10 text-yellow-400 ring-yellow-500/20',
-  high: 'bg-orange-500/10 text-orange-400 ring-orange-500/20',
-  critical: 'bg-red-500/10 text-red-400 ring-red-500/20',
-};
-const STS_CLR = {
-  reported: 'bg-blue-500/10 text-blue-400 ring-blue-500/20',
-  responding: 'bg-yellow-500/10 text-yellow-400 ring-yellow-500/20',
-  resolved: 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20',
-  closed: 'bg-slate-500/10 text-slate-400 ring-slate-500/20',
-};
-const empty = { title:'', description:'', severity:'medium', status:'reported', location:'' };
+const emptyForm = { title: '', description: '', severity: 'medium', status: 'reported', location: '' };
 
 const IncidentsPage = () => {
   const [items, setItems] = useState([]);
@@ -31,7 +18,7 @@ const IncidentsPage = () => {
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'timeline'
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState(empty);
+  const [form, setForm] = useState(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const toast = useToast();
 
@@ -45,25 +32,25 @@ const IncidentsPage = () => {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, [fSev, fSts]); // eslint-disable-line
+  useEffect(() => { load(); }, [fSev, fSts]);
 
-  const openCreate = () => { setEditId(null); setForm(empty); setModal(true); };
+  const openCreate = () => { setEditId(null); setForm(emptyForm); setModal(true); };
   const openEdit = (i) => {
     setEditId(i._id);
-    setForm({ title:i.title, description:i.description||'', severity:i.severity, status:i.status, location:i.location });
+    setForm({ title: i.title, description: i.description || '', severity: i.severity, status: i.status, location: i.location });
     setModal(true);
   };
   const submit = async (e) => {
     e.preventDefault();
     try {
-      if (editId) { await incidentsAPI.update(editId, form); toast.success('Updated'); }
-      else { await incidentsAPI.create(form); toast.success('Created'); }
+      if (editId) { await incidentsAPI.update(editId, form); toast.success('Alert updated'); }
+      else { await incidentsAPI.create(form); toast.success('Alert initialized'); }
       setModal(false); load();
     } catch (err) { toast.error(err.message); }
   };
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    try { await incidentsAPI.delete(deleteTarget); toast.success('Deleted'); load(); }
+    try { await incidentsAPI.delete(deleteTarget); toast.success('Alert purged'); load(); }
     catch (err) { toast.error(err.message); }
     finally { setDeleteTarget(null); }
   };
@@ -72,128 +59,167 @@ const IncidentsPage = () => {
     i.title.toLowerCase().includes(search.toLowerCase()) ||
     i.location.toLowerCase().includes(search.toLowerCase())
   );
-  const fmtDate = d => new Date(d).toLocaleString('en-IN',{ day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
 
-  const inputCls = "w-full px-4 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors";
+  const getSevColors = (sev) => {
+    switch(sev) {
+      case 'critical': return 'text-crimson bg-crimson/10 border-crimson drop-shadow-[0_0_5px_rgba(213,0,0,0.5)]';
+      case 'high': return 'text-amber bg-amber/10 border-amber drop-shadow-[0_0_5px_rgba(255,191,0,0.5)]';
+      case 'medium': return 'text-surface-tint bg-surface-tint/10 border-surface-tint drop-shadow-[0_0_5px_rgba(0,219,231,0.5)]';
+      default: return 'text-success bg-success/10 border-success drop-shadow-[0_0_5px_rgba(0,200,83,0.5)]';
+    }
+  };
+
+  const tableColumns = [
+    { header: 'ALERT DESIGNATION', accessor: 'title', render: (row) => (
+      <div>
+        <p className="font-data-md text-[14px] text-on-surface uppercase">{row.title}</p>
+        {row.description && <p className="font-data-md text-[11px] text-on-surface-variant/70 truncate max-w-xs">{row.description}</p>}
+      </div>
+    )},
+    { header: 'SEVERITY', accessor: 'severity', render: (row) => (
+      <span className={`font-label-caps text-[10px] px-2 py-1 rounded border uppercase tracking-widest ${getSevColors(row.severity)}`}>
+        {row.severity}
+      </span>
+    )},
+    { header: 'STATUS', accessor: 'status', render: (row) => (
+      <span className="font-label-caps text-[10px] text-primary uppercase tracking-widest">{row.status}</span>
+    )},
+    { header: 'VECTOR (LOCATION)', accessor: 'location', render: (row) => (
+      <span className="font-data-md text-[12px] text-outline-variant">{row.location}</span>
+    )},
+    { header: 'TIMESTAMP', accessor: 'time', render: (row) => (
+      <span className="font-data-md text-[12px] text-primary font-bold tracking-widest">
+        {new Date(row.createdAt).toLocaleTimeString('en-US', { hour12: false })}
+      </span>
+    )},
+    { header: 'ACTIONS', align: 'right', render: (row) => (
+      <div className="flex items-center justify-end gap-2">
+        <button onClick={() => openEdit(row)} className="text-outline-variant hover:text-primary transition-colors"><span className="material-symbols-outlined text-[18px]">terminal</span></button>
+        <button onClick={() => setDeleteTarget(row._id)} className="text-outline-variant hover:text-crimson transition-colors"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+      </div>
+    )}
+  ];
 
   return (
-    <main className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 animate-slide-up">
+    <div className="flex-1 p-gutter flex flex-col overflow-hidden relative bg-background">
+      {/* Background ambient glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-crimson/5 rounded-full blur-[100px]"></div>
+      </div>
+
+      {/* Header */}
+      <div className="flex justify-between items-end mb-6 z-10 border-b border-outline-variant/30 pb-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Incidents</h1>
-          <p className="text-slate-400 text-sm">Manage and track all reported incidents.</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="material-symbols-outlined text-crimson" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+            <h1 className="font-headline-md text-headline-md text-crimson tracking-tight drop-shadow-[0_0_10px_rgba(213,0,0,0.5)]">Critical Incident Alert</h1>
+          </div>
+          <p className="font-data-md text-data-md text-on-surface-variant">Real-time threat monitoring and resolution tracking.</p>
         </div>
+        
         <div className="flex items-center gap-3">
-          {/* View Toggle */}
-          <div className="flex items-center rounded-xl bg-slate-800/50 border border-slate-700/50 p-0.5">
-            <button onClick={() => setViewMode('table')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'table' ? 'bg-blue-500/15 text-blue-400' : 'text-slate-500 hover:text-white'}`}>
-              <List className="w-3.5 h-3.5" />Table
+          <div className="flex items-center bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-1">
+            <button onClick={() => setViewMode('table')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-label-caps tracking-widest transition-all ${viewMode === 'table' ? 'bg-primary/20 text-primary border border-primary/50' : 'text-on-surface-variant hover:text-on-surface'}`}>
+              <span className="material-symbols-outlined text-[16px]">list</span> TABLE
             </button>
-            <button onClick={() => setViewMode('timeline')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'timeline' ? 'bg-blue-500/15 text-blue-400' : 'text-slate-500 hover:text-white'}`}>
-              <GitBranch className="w-3.5 h-3.5" />Timeline
+            <button onClick={() => setViewMode('timeline')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-label-caps tracking-widest transition-all ${viewMode === 'timeline' ? 'bg-primary/20 text-primary border border-primary/50' : 'text-on-surface-variant hover:text-on-surface'}`}>
+              <span className="material-symbols-outlined text-[16px]">timeline</span> TIMELINE
             </button>
           </div>
-          <button onClick={openCreate} className="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all">
-            <Plus className="w-4 h-4 mr-2" />Report Incident
+          <button onClick={openCreate} className="btn-primary px-6 py-2.5 rounded-lg flex items-center gap-2 shadow-[0_0_15px_rgba(0,242,255,0.15)] hover:shadow-[0_0_25px_rgba(0,242,255,0.4)]">
+            <span className="material-symbols-outlined text-[18px]">add_alert</span>
+            INITIALIZE ALERT
           </button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 animate-slide-up stagger-1" style={{ animationFillMode: 'both' }}>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 z-10 mb-6 glass-panel p-3 rounded-lg">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors" />
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant text-[18px]">search</span>
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="QUERY DATABASE..." className="w-full pl-10 pr-4 py-2 rounded-sm bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-data-md text-[13px] placeholder:text-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
         </div>
-        <select value={fSev} onChange={e=>setFSev(e.target.value)} className="px-4 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-300 focus:outline-none focus:border-blue-500">
-          <option value="">All Severity</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
+        <select value={fSev} onChange={e => setFSev(e.target.value)} className="px-4 py-2 rounded-sm bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-data-md text-[13px] focus:outline-none focus:border-primary">
+          <option value="">ALL SEVERITIES</option><option value="low">LOW</option><option value="medium">MEDIUM</option><option value="high">HIGH</option><option value="critical">CRITICAL</option>
         </select>
-        <select value={fSts} onChange={e=>setFSts(e.target.value)} className="px-4 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-300 focus:outline-none focus:border-blue-500">
-          <option value="">All Status</option><option value="reported">Reported</option><option value="responding">Responding</option><option value="resolved">Resolved</option><option value="closed">Closed</option>
+        <select value={fSts} onChange={e => setFSts(e.target.value)} className="px-4 py-2 rounded-sm bg-surface-container-lowest border border-outline-variant/50 text-on-surface font-data-md text-[13px] focus:outline-none focus:border-primary">
+          <option value="">ALL STATUSES</option><option value="reported">REPORTED</option><option value="responding">RESPONDING</option><option value="resolved">RESOLVED</option><option value="closed">CLOSED</option>
         </select>
       </div>
 
       {/* Content */}
-      <div className="animate-slide-up stagger-2" style={{ animationFillMode: 'both' }}>
-        {loading ? <div className="rounded-2xl bg-slate-800/40 border border-slate-700/50 p-4"><TableSkeleton rows={6} /></div>
-        : viewMode === 'timeline' ? (
+      <div className="flex-1 overflow-y-auto z-10 custom-scrollbar pb-8">
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-2 border-surface-tint border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : viewMode === 'timeline' ? (
           <IncidentTimeline incidents={filtered} onEdit={openEdit} />
-        ) : filtered.length === 0 ? (
-          <div className="rounded-2xl bg-slate-800/40 border border-slate-700/50 p-12 text-center">
-            <AlertTriangle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400 font-medium">No incidents found</p>
-          </div>
         ) : (
-          <div className="rounded-2xl bg-slate-800/40 border border-slate-700/50 backdrop-blur-md shadow-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead><tr className="border-b border-slate-700/50 bg-slate-800/50">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Incident</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Severity</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Location</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Time</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase">Actions</th>
-                </tr></thead>
-                <tbody className="divide-y divide-slate-700/30">
-                  {filtered.map(inc => (
-                    <tr key={inc._id} className="hover:bg-slate-700/20 transition-colors">
-                      <td className="px-4 py-3"><p className="text-sm font-medium text-white">{inc.title}</p>
-                        {inc.description && <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xs">{inc.description}</p>}
-                      </td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2.5 py-1 rounded-full ring-1 ring-inset font-medium capitalize ${SEV_CLR[inc.severity]}`}>{inc.severity}</span></td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2.5 py-1 rounded-full ring-1 ring-inset font-medium capitalize ${STS_CLR[inc.status]}`}>{inc.status}</span></td>
-                      <td className="px-4 py-3"><span className="flex items-center text-sm text-slate-300"><MapPin className="w-3 h-3 mr-1 text-slate-500" />{inc.location}</span></td>
-                      <td className="px-4 py-3"><span className="flex items-center text-xs text-slate-400"><Clock className="w-3 h-3 mr-1" />{fmtDate(inc.createdAt)}</span></td>
-                      <td className="px-4 py-3 text-right"><div className="flex items-center justify-end gap-1">
-                        <button onClick={()=>openEdit(inc)} className="p-1.5 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-blue-400 transition-colors"><Edit3 className="w-4 h-4" /></button>
-                        <button onClick={()=>setDeleteTarget(inc._id)} className="p-1.5 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                      </div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <DataTable columns={tableColumns} data={filtered} />
         )}
       </div>
-      <div className="text-sm text-slate-500 text-right">Showing {filtered.length} of {items.length}</div>
 
-      <Modal isOpen={modal} onClose={()=>setModal(false)} title={editId?'Edit Incident':'Report New Incident'}>
-        <form onSubmit={submit} className="space-y-4">
-          <div><label className="block text-sm font-medium text-slate-300 mb-1.5">Title</label>
-            <input type="text" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} required placeholder="Incident title" className={inputCls} /></div>
-          <div><label className="block text-sm font-medium text-slate-300 mb-1.5">Location</label>
-            <input type="text" value={form.location} onChange={e=>setForm({...form,location:e.target.value})} required placeholder="Location" className={inputCls} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-sm font-medium text-slate-300 mb-1.5">Severity</label>
-              <select value={form.severity} onChange={e=>setForm({...form,severity:e.target.value})} className={inputCls}>
-                <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
-            <div><label className="block text-sm font-medium text-slate-300 mb-1.5">Status</label>
-              <select value={form.status} onChange={e=>setForm({...form,status:e.target.value})} className={inputCls}>
-                <option value="reported">Reported</option><option value="responding">Responding</option><option value="resolved">Resolved</option><option value="closed">Closed</option></select></div>
-          </div>
-          <div><label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
-            <textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={3} placeholder="Describe..." className={`${inputCls} resize-none`} /></div>
-          <button type="submit" className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all">
-            {editId?'Update':'Report'} Incident</button>
-        </form>
-      </Modal>
+      <div className="z-10 text-right mt-4 font-data-md text-[12px] text-outline-variant tracking-widest">
+        DISPLAYING {filtered.length} OF {items.length} RECORDS
+      </div>
 
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={!!deleteTarget} onClose={()=>setDeleteTarget(null)} title="Confirm Deletion" size="sm">
-        <div className="text-center py-4">
-          <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
-            <Trash2 className="w-7 h-7 text-red-400" />
+      {/* Modals */}
+      {modal && (
+        <Modal isOpen={modal} onClose={() => setModal(false)} title={editId ? 'UPDATE ALERT PROTOCOL' : 'INITIALIZE ALERT PROTOCOL'}>
+          <form onSubmit={submit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">Alert Designation</label>
+              <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required className="input-field w-full rounded-sm px-4 py-3 bg-surface-container-lowest" placeholder="e.g. SUSPICIOUS ACTIVITY" />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">Vector (Location)</label>
+              <input type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})} required className="input-field w-full rounded-sm px-4 py-3 bg-surface-container-lowest" placeholder="Coordinates or Address" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">Severity Protocol</label>
+                <select value={form.severity} onChange={e => setForm({...form, severity: e.target.value})} className="input-field w-full rounded-sm px-4 py-3 bg-surface-container-lowest">
+                  <option value="low">LOW</option><option value="medium">MEDIUM</option><option value="high">HIGH</option><option value="critical">CRITICAL</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">Cascade Status</label>
+                <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="input-field w-full rounded-sm px-4 py-3 bg-surface-container-lowest">
+                  <option value="reported">REPORTED</option><option value="responding">RESPONDING</option><option value="resolved">RESOLVED</option><option value="closed">CLOSED</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest">Tactical Description</label>
+              <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3} className="input-field w-full rounded-sm px-4 py-3 bg-surface-container-lowest resize-none" placeholder="Enter tactical details..." />
+            </div>
+
+            <div className="flex justify-end gap-4 mt-6 pt-4 border-t border-outline-variant/30">
+              <button type="button" onClick={() => setModal(false)} className="btn-secondary px-6 py-2.5 rounded-lg">ABORT</button>
+              <button type="submit" className="btn-primary px-8 py-2.5 rounded-lg">EXECUTE</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {deleteTarget && (
+        <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="CONFIRM PURGE">
+          <div className="text-center py-6">
+            <span className="material-symbols-outlined text-6xl text-crimson mb-4 drop-shadow-[0_0_15px_rgba(213,0,0,0.5)]">warning</span>
+            <p className="font-headline-md text-headline-md text-on-surface mb-2">PURGE RECORD?</p>
+            <p className="font-data-md text-data-md text-on-surface-variant mb-8">This action will permanently erase the alert from the database.</p>
+            <div className="flex justify-center gap-4">
+              <button onClick={() => setDeleteTarget(null)} className="btn-secondary px-8 py-2.5 rounded-lg">ABORT</button>
+              <button onClick={confirmDelete} className="bg-crimson/20 border border-crimson text-crimson font-label-caps px-8 py-2.5 rounded-lg hover:bg-crimson hover:text-white transition-all shadow-[0_0_15px_rgba(213,0,0,0.2)] hover:shadow-[0_0_25px_rgba(213,0,0,0.5)]">PURGE</button>
+            </div>
           </div>
-          <p className="text-slate-300 font-medium mb-1">Delete this incident?</p>
-          <p className="text-slate-500 text-sm mb-6">This action cannot be undone.</p>
-          <div className="flex gap-3">
-            <button onClick={()=>setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-semibold hover:bg-white/5 transition-all">Cancel</button>
-            <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-semibold shadow-lg shadow-red-500/20 transition-all">Delete</button>
-          </div>
-        </div>
-      </Modal>
-    </main>
+        </Modal>
+      )}
+    </div>
   );
 };
 

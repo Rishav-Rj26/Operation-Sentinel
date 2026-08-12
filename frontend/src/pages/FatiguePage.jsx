@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Activity, AlertTriangle, RefreshCw, Shield, Users, TrendingUp, Zap } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useToast } from '../components/Toast';
 import { fatigueAPI } from '../services/api';
+import FatigueBar from '../components/FatigueBar';
+import DataTable from '../components/DataTable';
 
 const HISTOGRAM_COLORS = {
   '0-20': '#00c853',
-  '21-40': '#4caf50',
+  '21-40': '#00c853',
   '41-60': '#ffbf00',
-  '61-80': '#ff9800',
-  '81-100': '#f44336',
+  '61-80': '#ffbf00',
+  '81-100': '#d50000',
   '100+': '#d50000',
 };
 
@@ -36,7 +37,6 @@ const FatiguePage = () => {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
 
   const handleRecalculate = async () => {
@@ -52,202 +52,171 @@ const FatiguePage = () => {
     }
   };
 
-  // Prepare histogram data for recharts
   const histogramData = data?.histogram
     ? Object.entries(data.histogram).map(([range, count]) => ({ range, count }))
     : [];
 
   const p90 = data?.p90_threshold || 0;
 
+  const columns = [
+    { header: 'OFFICER DESIGNATION', accessor: 'name', render: (row) => <span className="font-data-md text-[13px] text-on-surface uppercase">{row.name}</span> },
+    { header: 'BADGE / RANK', accessor: 'rank', render: (row) => <span className="font-data-md text-[11px] text-on-surface-variant uppercase">{row.rank || row.badge || 'N/A'}</span> },
+    { header: 'STATUS', accessor: 'status', render: (row) => (
+      <span className="font-label-caps text-[10px] px-2 py-1 rounded bg-crimson/10 border border-crimson/30 text-crimson uppercase tracking-widest drop-shadow-[0_0_5px_rgba(213,0,0,0.5)]">
+        {row.status?.replace('_', ' ') || 'ACTIVE'}
+      </span>
+    )},
+    { header: 'FATIGUE LEVEL', accessor: 'fatigue', render: (row) => (
+      <div className="w-48"><FatigueBar score={row.fatigueScore || row.fatigue_score || 0} /></div>
+    )},
+    { header: 'RISK ASSESSMENT', accessor: 'risk', render: (row) => {
+      const fScore = row.fatigueScore || row.fatigue_score || 0;
+      const pct = p90 > 0 ? Math.round((fScore / p90) * 100) : 0;
+      let riskLevel = 'ELEVATED';
+      let riskClass = 'bg-amber/20 text-amber border-amber';
+      if (pct >= 150) {
+        riskLevel = 'CRITICAL';
+        riskClass = 'bg-crimson/20 text-crimson border-crimson shadow-[inset_0_0_8px_rgba(213,0,0,0.3)]';
+      } else if (pct >= 120) {
+        riskLevel = 'HIGH';
+        riskClass = 'bg-amber/40 text-amber border-amber shadow-[inset_0_0_8px_rgba(255,191,0,0.3)]';
+      }
+      return <span className={`font-label-caps text-[10px] px-2 py-1 rounded border uppercase tracking-widest ${riskClass}`}>{riskLevel}</span>
+    }}
+  ];
+
   return (
-    <main className="relative z-10 w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="flex-1 p-gutter flex flex-col overflow-hidden relative bg-background">
+      {/* Background ambient glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-crimson/5 rounded-full blur-[120px]"></div>
+      </div>
+
+      <div className="flex justify-between items-end mb-6 z-10 border-b border-outline-variant/30 pb-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Fatigue Monitoring</h1>
-          <p className="text-slate-400 text-sm">Track officer fatigue levels and identify high-risk personnel.</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="material-symbols-outlined text-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>monitor_heart</span>
+            <h1 className="font-headline-md text-headline-md text-primary-container tracking-tight">Fatigue & Force Analytics</h1>
+          </div>
+          <p className="font-data-md text-data-md text-on-surface-variant">Biometric fatigue monitoring and deployment risk assessment.</p>
         </div>
-        <button
-          onClick={handleRecalculate}
-          disabled={recalculating}
-          className="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all disabled:opacity-50"
+        
+        <button 
+          onClick={handleRecalculate} 
+          disabled={recalculating} 
+          className="btn-primary px-6 py-2.5 rounded-lg flex items-center gap-2 shadow-[0_0_15px_rgba(0,242,255,0.15)] hover:shadow-[0_0_25px_rgba(0,242,255,0.4)]"
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${recalculating ? 'animate-spin' : ''}`} />
-          {recalculating ? 'Recalculating...' : 'Recalculate Fatigue'}
+          {recalculating ? (
+            <div className="w-4 h-4 border-2 border-on-primary-fixed border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <span className="material-symbols-outlined text-[18px]">sync</span>
+          )}
+          RUN FATIGUE ANALYSIS
         </button>
       </div>
 
       {loading ? (
-        <div className="text-slate-400 text-center py-20">Loading fatigue data...</div>
+        <div className="flex-1 flex items-center justify-center z-10">
+          <div className="w-8 h-8 border-2 border-surface-tint border-t-transparent rounded-full animate-spin"></div>
+        </div>
       ) : (
-        <>
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                label: 'Total Officers Tracked',
-                value: data?.total_officers || 0,
-                icon: Users,
-                color: 'text-blue-400',
-                bg: 'bg-blue-500/10',
-              },
-              {
-                label: 'High-Risk (P90+)',
-                value: data?.high_risk_count || 0,
-                icon: AlertTriangle,
-                color: 'text-red-400',
-                bg: 'bg-red-500/10',
-              },
-              {
-                label: 'P90 Threshold',
-                value: p90,
-                icon: TrendingUp,
-                color: 'text-amber-400',
-                bg: 'bg-amber-500/10',
-              },
-              {
-                label: 'Avg Fatigue',
-                value: data?.officers?.length
-                  ? Math.round(
-                      data.officers.reduce((acc, o) => acc + (o.fatigueScore || o.fatigue_score || 0), 0) /
-                        data.officers.length
-                    )
-                  : 0,
-                icon: Activity,
-                color: 'text-cyan-400',
-                bg: 'bg-cyan-500/10',
-              },
-            ].map((s, i) => (
-              <div key={i} className="glass-card rounded-2xl p-5 flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${s.bg}`}>
-                  <s.icon className={`w-6 h-6 ${s.color}`} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-400">{s.label}</p>
-                  <h3 className="text-2xl font-bold text-white tabular-nums">{s.value}</h3>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Fatigue Distribution Histogram */}
-          <div className="glass-card rounded-2xl p-6">
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
-              <Zap className="w-4 h-4" /> Fatigue Distribution
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={histogramData} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="range" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(18, 33, 49, 0.95)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '8px',
-                      color: '#fff',
-                    }}
-                  />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                    {histogramData.map((entry) => (
-                      <Cell key={entry.range} fill={HISTOGRAM_COLORS[entry.range] || '#00dbe7'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+        <div className="flex-1 overflow-y-auto z-10 custom-scrollbar pr-2 flex flex-col gap-6">
+          
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="sentinel-card rounded-lg p-5 flex flex-col gap-2">
+              <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest flex justify-between items-center">
+                ACTIVE PERSONNEL
+                <span className="material-symbols-outlined text-[14px]">group</span>
+              </span>
+              <span className="font-data-lg text-[32px] font-bold text-surface-tint drop-shadow-[0_0_10px_rgba(0,219,231,0.5)]">{data?.total_officers || 0}</span>
             </div>
-            {/* P90 Threshold Indicator */}
-            <div className="mt-4 flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
-              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
-              <span className="text-sm text-amber-300">
-                Officers at or above <span className="font-mono font-bold">{p90}</span> fatigue (90th percentile) are
-                excluded from Red-zone deployment the following day.
+            
+            <div className="sentinel-card rounded-lg p-5 flex flex-col gap-2 border-crimson/30 shadow-[0_0_15px_rgba(213,0,0,0.1)]">
+              <span className="font-label-caps text-label-caps text-crimson uppercase tracking-widest flex justify-between items-center">
+                HIGH-RISK (P90+)
+                <span className="material-symbols-outlined text-[14px]">warning</span>
+              </span>
+              <span className="font-data-lg text-[32px] font-bold text-crimson drop-shadow-[0_0_10px_rgba(213,0,0,0.6)]">{data?.high_risk_count || 0}</span>
+            </div>
+            
+            <div className="sentinel-card rounded-lg p-5 flex flex-col gap-2 border-amber/30 shadow-[0_0_15px_rgba(255,191,0,0.1)]">
+              <span className="font-label-caps text-label-caps text-amber uppercase tracking-widest flex justify-between items-center">
+                P90 THRESHOLD
+                <span className="material-symbols-outlined text-[14px]">show_chart</span>
+              </span>
+              <span className="font-data-lg text-[32px] font-bold text-amber drop-shadow-[0_0_10px_rgba(255,191,0,0.6)]">{p90}</span>
+            </div>
+            
+            <div className="sentinel-card rounded-lg p-5 flex flex-col gap-2">
+              <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest flex justify-between items-center">
+                AVERAGE FATIGUE
+                <span className="material-symbols-outlined text-[14px]">monitor_heart</span>
+              </span>
+              <span className="font-data-lg text-[32px] font-bold text-on-surface">
+                {data?.officers?.length ? Math.round(data.officers.reduce((acc, o) => acc + (o.fatigueScore || o.fatigue_score || 0), 0) / data.officers.length) : 0}
               </span>
             </div>
           </div>
 
-          {/* High-Risk Officers Table */}
-          <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-700/50">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-400" /> High-Risk Officers ({highRisk.length})
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Histogram */}
+            <div className="lg:col-span-1 sentinel-panel rounded-lg p-5 border border-outline-variant/30 flex flex-col gap-4">
+              <h3 className="font-label-caps text-[11px] text-surface-tint uppercase tracking-widest flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px]">bar_chart</span>
+                Force Composition Breakdown
               </h3>
+              
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={histogramData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="range" tick={{ fill: '#849495', fontSize: 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} tickLine={false} />
+                    <YAxis tick={{ fill: '#849495', fontSize: 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} tickLine={false} />
+                    <Tooltip 
+                      cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                      contentStyle={{ backgroundColor: 'rgba(13, 28, 45, 0.95)', border: '1px solid #3a494b', borderRadius: '4px', color: '#00dbe7', fontFamily: 'JetBrains Mono', fontSize: '11px' }}
+                    />
+                    <Bar dataKey="count" radius={[2, 2, 0, 0]}>
+                      {histogramData.map((entry) => (
+                        <Cell key={entry.range} fill={HISTOGRAM_COLORS[entry.range] || '#00dbe7'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="bg-amber/10 border-l-2 border-amber px-4 py-3 flex items-start gap-3 rounded-r">
+                <span className="material-symbols-outlined text-amber text-lg shrink-0">warning</span>
+                <div>
+                  <p className="font-label-caps text-[10px] text-amber mb-1 tracking-widest">DEPLOYMENT RESTRICTION</p>
+                  <p className="text-xs text-on-surface-variant font-data-md">Officers at or above P90 threshold ({p90}) are excluded from Red-zone assignments.</p>
+                </div>
+              </div>
             </div>
-            {highRisk.length === 0 ? (
-              <div className="p-12 text-center">
-                <Shield className="w-12 h-12 text-emerald-500/40 mx-auto mb-3" />
-                <p className="text-slate-400 font-medium">No high-risk officers</p>
-                <p className="text-slate-500 text-sm">All officers are within safe fatigue levels.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-700/50 bg-slate-800/50">
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Rank</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">
-                        Fatigue Score
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">
-                        Risk Level
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-700/30">
-                    {highRisk.map((o) => {
-                      const fScore = o.fatigueScore || o.fatigue_score || 0;
-                      const pct = p90 > 0 ? Math.round((fScore / p90) * 100) : 0;
-                      return (
-                        <tr key={o._id || o.id} className="hover:bg-slate-700/20 transition-colors">
-                          <td className="px-4 py-3">
-                            <span className="text-sm font-bold text-white">{o.name}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-sm text-slate-300">{o.rank}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-xs px-2.5 py-1 rounded-full ring-1 ring-inset ring-red-500/20 bg-red-500/10 text-red-400 font-medium capitalize">
-                              {o.status?.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-24 fatigue-indicator">
-                                <div
-                                  className="fatigue-marker"
-                                  style={{ left: `${Math.min(100, Math.max(0, fScore))}%` }}
-                                />
-                              </div>
-                              <span className="text-sm font-mono text-red-400 font-bold">{fScore}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`text-xs font-bold px-2 py-1 rounded ${
-                                pct >= 150
-                                  ? 'bg-red-600/20 text-red-300'
-                                  : pct >= 120
-                                    ? 'bg-orange-500/20 text-orange-300'
-                                    : 'bg-amber-500/20 text-amber-300'
-                              }`}
-                            >
-                              {pct >= 150 ? 'CRITICAL' : pct >= 120 ? 'HIGH' : 'ELEVATED'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+
+            {/* High-Risk Table */}
+            <div className="lg:col-span-2 flex flex-col gap-4">
+              <h3 className="font-label-caps text-[11px] text-crimson uppercase tracking-widest flex items-center gap-2 drop-shadow-[0_0_5px_rgba(213,0,0,0.5)]">
+                <span className="material-symbols-outlined text-[16px]">warning</span>
+                High-Risk Personnel ({highRisk.length})
+              </h3>
+              
+              {highRisk.length === 0 ? (
+                <div className="sentinel-panel border border-outline-variant/30 rounded-lg p-16 flex flex-col items-center justify-center text-center flex-1">
+                  <span className="material-symbols-outlined text-6xl text-success/30 mb-4 drop-shadow-[0_0_15px_rgba(0,200,83,0.3)]">check_circle</span>
+                  <h3 className="font-headline-md text-headline-md text-success mb-2 drop-shadow-[0_0_8px_rgba(0,200,83,0.5)]">ALL CLEAR</h3>
+                  <p className="font-data-md text-data-md text-on-surface-variant max-w-md">No personnel detected within high-risk fatigue thresholds.</p>
+                </div>
+              ) : (
+                <DataTable columns={columns} data={highRisk} />
+              )}
+            </div>
           </div>
-        </>
+        </div>
       )}
-    </main>
+    </div>
   );
 };
 

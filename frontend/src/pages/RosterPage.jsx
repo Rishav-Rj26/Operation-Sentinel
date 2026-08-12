@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, ChevronLeft, ChevronRight, RefreshCw, Download, Eye, Shield } from 'lucide-react';
 import Modal from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { schedulerAPI, zonesAPI } from '../services/api';
 
 const SHIFTS = [
-  { id: 'morning', name: 'Morning', icon: '☀️' },
-  { id: 'evening', name: 'Evening', icon: '🌅' },
-  { id: 'night', name: 'Night', icon: '🌙' }
+  { id: 'morning', name: 'Morn', icon: 'brightness_5' },
+  { id: 'evening', name: 'Eve', icon: 'light_mode' },
+  { id: 'night', name: 'Nght', icon: 'dark_mode' }
 ];
 
 const RosterPage = () => {
@@ -39,7 +38,6 @@ const RosterPage = () => {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
 
   const handleGenerate = async () => {
@@ -74,209 +72,258 @@ const RosterPage = () => {
   });
 
   const allDates = Array.from(datesSet).sort();
-  
-  // Calculate view dates based on offset
   const startIndex = weekOffset * 7;
   const viewDates = allDates.slice(startIndex, startIndex + 7);
-  
   const filteredZones = fZone ? zones.filter(z => (z._id || z.id) === fZone) : zones;
-
   const totalDeployed = roster.filter(r => viewDates.includes(new Date(r.date).toISOString().split('T')[0])).reduce((acc, r) => acc + (r.officers?.length || 0), 0);
 
   return (
-    <main className="relative z-10 w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Deployment Roster</h1>
-          <p className="text-slate-400 text-sm">View and manage officer shift assignments.</p>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={handleGenerate} disabled={generating} className="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 mr-2 ${generating ? 'animate-spin' : ''}`} />
-            {generating ? 'Generating...' : 'Generate 30-Day Roster'}
-          </button>
-        </div>
+    <div className="flex-1 p-gutter flex flex-col overflow-hidden relative bg-background">
+      
+      {/* Background ambient glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-primary-container/5 rounded-full blur-[100px]"></div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 glass-card rounded-2xl p-4">
+      {/* Header */}
+      <div className="flex justify-between items-end mb-6 z-10 border-b border-outline-variant/30 pb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="material-symbols-outlined text-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>calendar_month</span>
+            <h1 className="font-headline-md text-headline-md text-primary-container tracking-tight">Personnel Roster Grid</h1>
+          </div>
+          <p className="font-data-md text-data-md text-on-surface-variant">30-day shift allocation and zone coverage matrix.</p>
+        </div>
+        
+        <button 
+          onClick={handleGenerate} 
+          disabled={generating} 
+          className="btn-primary px-6 py-2.5 rounded-lg flex items-center gap-2 shadow-[0_0_15px_rgba(0,242,255,0.15)] hover:shadow-[0_0_25px_rgba(0,242,255,0.4)]"
+        >
+          {generating ? (
+            <div className="w-4 h-4 border-2 border-on-primary-fixed border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
+          )}
+          GENERATE 30-DAY ROSTER
+        </button>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 glass-panel rounded-lg p-3 z-10 mb-6">
         <div className="flex items-center gap-3">
-          <select value={fZone} onChange={e=>setFZone(e.target.value)} className="px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 focus:outline-none focus:border-blue-500">
-            <option value="">All Zones</option>
-            {zones.map(z=><option key={z._id || z.id} value={z._id || z.id}>{z.name}</option>)}
+          <select 
+            value={fZone} 
+            onChange={e => setFZone(e.target.value)} 
+            className="input-field rounded-sm px-3 py-1.5 text-sm bg-surface-container-lowest focus:ring-0"
+          >
+            <option value="">ALL ZONES</option>
+            {zones.map(z => <option key={z._id || z.id} value={z._id || z.id}>{z.name}</option>)}
           </select>
-          <button className="p-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 hover:text-white"><Download className="w-4 h-4" /></button>
+          <button className="text-on-surface-variant hover:text-surface-tint p-1.5 border border-outline-variant/30 rounded-sm hover:border-surface-tint/50 transition-colors">
+            <span className="material-symbols-outlined text-[18px]">download</span>
+          </button>
         </div>
         
         {allDates.length > 0 && (
-          <div className="week-nav">
-            <button disabled={weekOffset === 0} onClick={()=>setWeekOffset(o => o - 1)} className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 disabled:opacity-30"><ChevronLeft className="w-5 h-5" /></button>
-            <div className="px-3 flex items-center gap-2 text-sm font-medium text-white">
-              <Calendar className="w-4 h-4 text-slate-400" />
-              {new Date(viewDates[0]).toLocaleDateString(undefined, {month:'short', day:'numeric'})} - 
-              {viewDates.length > 0 && new Date(viewDates[viewDates.length-1]).toLocaleDateString(undefined, {month:'short', day:'numeric'})}
+          <div className="flex items-center gap-2 border border-outline-variant/30 rounded-sm p-1 bg-surface-container-lowest/50">
+            <button 
+              disabled={weekOffset === 0} 
+              onClick={() => setWeekOffset(o => o - 1)} 
+              className="p-1 hover:bg-white/10 text-on-surface-variant hover:text-primary rounded-sm disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+            </button>
+            <div className="px-4 font-label-caps text-label-caps text-surface-tint flex items-center gap-2">
+              <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+              {new Date(viewDates[0]).toLocaleDateString(undefined, {month:'short', day:'2-digit'})} - 
+              {viewDates.length > 0 && new Date(viewDates[viewDates.length-1]).toLocaleDateString(undefined, {month:'short', day:'2-digit'})}
             </div>
-            <button disabled={startIndex + 7 >= allDates.length} onClick={()=>setWeekOffset(o => o + 1)} className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 disabled:opacity-30"><ChevronRight className="w-5 h-5" /></button>
+            <button 
+              disabled={startIndex + 7 >= allDates.length} 
+              onClick={() => setWeekOffset(o => o + 1)} 
+              className="p-1 hover:bg-white/10 text-on-surface-variant hover:text-primary rounded-sm disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+            </button>
           </div>
         )}
       </div>
 
-      <div className="glass-card rounded-2xl overflow-hidden border border-slate-700/50">
-        {loading ? <div className="p-10 text-center text-slate-400">Loading roster...</div> :
-         allDates.length === 0 ? (
-          <div className="p-16 text-center">
-            <Calendar className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">No Roster Available</h3>
-            <p className="text-slate-400 mb-6 max-w-md mx-auto">Generate a new 30-day roster to automatically assign officers based on fatigue constraints and zone requirements.</p>
-            <button onClick={handleGenerate} disabled={generating} className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg">
-              <RefreshCw className={`w-4 h-4 mr-2 ${generating ? 'animate-spin' : ''}`} />
-              {generating ? 'Generating...' : 'Generate Roster Now'}
-            </button>
+      {/* Grid */}
+      <div className="flex-1 overflow-auto rounded-lg border border-outline-variant/30 bg-surface-container-lowest/80 backdrop-blur-sm z-10 custom-scrollbar shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+        {loading ? (
+          <div className="p-10 flex items-center justify-center h-full">
+            <div className="w-8 h-8 border-2 border-surface-tint border-t-transparent rounded-full animate-spin"></div>
           </div>
-         ) : (
-          <div className="overflow-x-auto">
-            <table className="roster-grid w-full">
-              <thead>
-                <tr>
-                  <th className="bg-slate-800/80 p-3 min-w-[150px] text-left text-sm font-bold text-white sticky left-0 z-20 backdrop-blur-md">Zone</th>
-                  {viewDates.map(d => (
-                    <th key={d} colSpan={3} className="bg-slate-800/50 p-2 text-center border-b border-slate-700">
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">{new Date(d).toLocaleDateString(undefined, {weekday:'short'})}</div>
-                      <div className="text-sm font-bold text-white">{new Date(d).getDate()}</div>
+        ) : allDates.length === 0 ? (
+          <div className="p-16 flex flex-col items-center justify-center h-full text-center">
+            <span className="material-symbols-outlined text-6xl text-outline-variant/30 mb-4">event_busy</span>
+            <h3 className="font-headline-md text-headline-md text-on-surface mb-2">NO ROSTER DATA</h3>
+            <p className="font-data-md text-data-md text-on-surface-variant max-w-md">Initialize the 30-day projection matrix to populate shift allocations.</p>
+          </div>
+        ) : (
+          <table className="w-full border-collapse">
+            <thead className="sticky top-0 z-20">
+              <tr>
+                <th rowSpan={2} className="bg-surface-variant/90 border-b border-r border-outline-variant/30 p-3 min-w-[150px] text-left font-label-caps text-label-caps text-on-surface-variant sticky left-0 z-30 backdrop-blur-md">
+                  ZONE DESIGNATION
+                </th>
+                {viewDates.map(d => (
+                  <th key={d} colSpan={3} className="bg-surface-variant/90 p-2 text-center border-b border-r border-outline-variant/30 backdrop-blur-md">
+                    <div className="font-label-caps text-[10px] text-surface-tint/70 uppercase tracking-widest">{new Date(d).toLocaleDateString(undefined, {weekday:'short'})}</div>
+                    <div className="font-data-lg text-data-lg text-on-surface">{new Date(d).getDate()}</div>
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                {viewDates.map(d => 
+                  SHIFTS.map(s => (
+                    <th key={`${d}-${s.id}`} className="bg-surface-container-high/90 p-1.5 text-center border-b border-r border-outline-variant/30 backdrop-blur-md" title={s.name}>
+                      <span className="material-symbols-outlined text-[14px] text-on-surface-variant">{s.icon}</span>
                     </th>
-                  ))}
-                </tr>
-                <tr>
-                  <th className="bg-slate-800/90 border-b border-slate-700 sticky left-0 z-20 backdrop-blur-md"></th>
-                  {viewDates.map(d => 
-                    SHIFTS.map(s => (
-                      <th key={`${d}-${s.id}`} className="bg-slate-800/30 p-1.5 text-xs text-center border-b border-slate-700" title={s.name}>
-                        {s.icon}
-                      </th>
-                    ))
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredZones.map(z => {
-                  const zId = z._id || z.id;
-                  const dScore = z.densityScore || 5;
-                  const cColor = dScore <= 3 ? 'bg-emerald-500' : dScore <= 7 ? 'bg-amber-500' : 'bg-red-500';
-                  
-                  return (
-                    <tr key={zId}>
-                      <td className="p-3 text-sm font-medium text-slate-300 sticky left-0 z-10 bg-[#0c1622] border-r border-slate-700">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${cColor}`} />
-                          <span className="whitespace-nowrap truncate max-w-[120px]">{z.name}</span>
-                        </div>
-                      </td>
-                      {viewDates.map(d => 
-                        SHIFTS.map(s => {
-                          const shiftData = rosterMap[zId]?.[d]?.[s.id];
-                          const count = shiftData?.officers?.length || 0;
-                          const req = shiftData?.requiredOfficers || 2;
-                          let statusCls = 'text-slate-500';
-                          if (shiftData) {
-                            if (count >= req) statusCls = 'text-emerald-400 bg-emerald-500/10';
-                            else if (count > 0) statusCls = 'text-amber-400 bg-amber-500/10';
-                            else statusCls = 'text-red-400 bg-red-500/10';
-                          }
-                          
-                          return (
-                            <td 
-                              key={`${zId}-${d}-${s.id}`} 
-                              className={`roster-cell p-2 text-center ${statusCls}`}
-                              onClick={() => openDetail(shiftData)}
-                            >
-                              {shiftData ? (
-                                <div className="text-sm font-mono">{count}</div>
-                              ) : (
-                                <div className="text-slate-600">-</div>
-                              )}
-                            </td>
-                          );
-                        })
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-         )}
+                  ))
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredZones.map(z => {
+                const zId = z._id || z.id;
+                const dScore = z.densityScore || z.density_score || 5;
+                const cColor = dScore >= 8 ? 'bg-crimson shadow-[0_0_5px_#d50000]' : dScore >= 4 ? 'bg-amber shadow-[0_0_5px_#ffbf00]' : 'bg-success shadow-[0_0_5px_#00c853]';
+                
+                return (
+                  <tr key={zId} className="hover:bg-white/5 transition-colors group">
+                    <td className="p-3 font-data-md text-data-md text-on-surface sticky left-0 z-10 bg-surface border-b border-r border-outline-variant/30 group-hover:bg-surface-container-low transition-colors">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-1.5 h-1.5 rounded-full ${cColor}`} />
+                        <span className="whitespace-nowrap truncate max-w-[120px]">{z.name}</span>
+                      </div>
+                    </td>
+                    {viewDates.map(d => 
+                      SHIFTS.map(s => {
+                        const shiftData = rosterMap[zId]?.[d]?.[s.id];
+                        const count = shiftData?.officers?.length || 0;
+                        const req = shiftData?.requiredOfficers || 2;
+                        
+                        let statusCls = 'text-on-surface-variant/30';
+                        if (shiftData) {
+                          if (count >= req) statusCls = 'text-success bg-success/5 shadow-[inset_0_0_10px_rgba(0,200,83,0.1)]';
+                          else if (count > 0) statusCls = 'text-amber bg-amber/5 shadow-[inset_0_0_10px_rgba(255,191,0,0.1)]';
+                          else statusCls = 'text-crimson bg-crimson/10 shadow-[inset_0_0_10px_rgba(213,0,0,0.2)]';
+                        }
+                        
+                        return (
+                          <td 
+                            key={`${zId}-${d}-${s.id}`} 
+                            className={`p-2 text-center border-b border-r border-outline-variant/10 cursor-pointer hover:brightness-125 transition-all ${statusCls}`}
+                            onClick={() => openDetail(shiftData)}
+                          >
+                            {shiftData ? (
+                              <div className="font-data-md text-[13px]">{count}</div>
+                            ) : (
+                              <div className="font-data-md text-[13px]">-</div>
+                            )}
+                          </td>
+                        );
+                      })
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
+      {/* Legend */}
       {allDates.length > 0 && (
-        <div className="flex flex-wrap gap-4 text-sm text-slate-400">
-          <div className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500/50"></span> Fully Staffed</div>
-          <div className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-amber-500/20 border border-amber-500/50"></span> Understaffed</div>
-          <div className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-red-500/20 border border-red-500/50"></span> Critical</div>
-          <div className="ml-auto flex items-center gap-2 text-white">
-            <Users className="w-4 h-4 text-cyan-400" /> Total Deployed (Visible): <span className="font-mono text-cyan-400">{totalDeployed}</span>
+        <div className="flex flex-wrap items-center gap-6 mt-4 z-10 bg-surface-container-low/50 p-3 rounded-lg border border-outline-variant/30 backdrop-blur-sm">
+          <div className="flex items-center gap-2 font-label-caps text-[10px] text-on-surface-variant tracking-widest uppercase">
+            <span className="w-2 h-2 bg-success/50 border border-success"></span> FULLY STAFFED
+          </div>
+          <div className="flex items-center gap-2 font-label-caps text-[10px] text-on-surface-variant tracking-widest uppercase">
+            <span className="w-2 h-2 bg-amber/50 border border-amber"></span> UNDERSTAFFED
+          </div>
+          <div className="flex items-center gap-2 font-label-caps text-[10px] text-on-surface-variant tracking-widest uppercase">
+            <span className="w-2 h-2 bg-crimson/50 border border-crimson"></span> CRITICAL
+          </div>
+          <div className="ml-auto flex items-center gap-2 font-label-caps text-[10px] text-surface-tint tracking-widest uppercase">
+            <span className="material-symbols-outlined text-[14px]">group</span> TOTAL DEPLOYED (VISIBLE): 
+            <span className="font-data-lg text-[14px] text-primary">{totalDeployed}</span>
           </div>
         </div>
       )}
 
       {/* Shift Detail Modal */}
-      <Modal isOpen={detailModal} onClose={()=>setDetailModal(false)} title="Shift Details">
-        {selectedShift && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-              <div>
-                <div className="text-sm text-slate-400">{new Date(selectedShift.date).toLocaleDateString(undefined, {weekday:'long', year:'numeric', month:'long', day:'numeric'})}</div>
-                <div className="text-lg font-bold text-white capitalize flex items-center gap-2">
-                  {selectedShift.shiftType === 'morning' ? '☀️' : selectedShift.shiftType === 'evening' ? '🌅' : '🌙'} 
-                  {selectedShift.shiftType} Shift
+      {detailModal && (
+        <Modal isOpen={detailModal} onClose={() => setDetailModal(false)} title="SHIFT ALLOCATION DETAILS">
+          {selectedShift && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center bg-surface-container-low/50 p-4 rounded-lg border border-outline-variant/30">
+                <div>
+                  <div className="font-label-caps text-[10px] text-surface-tint/70 tracking-widest uppercase mb-1">
+                    {new Date(selectedShift.date).toLocaleDateString(undefined, {weekday:'long', year:'numeric', month:'long', day:'numeric'})}
+                  </div>
+                  <div className="font-headline-md text-headline-md text-primary-container capitalize flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px]">
+                      {selectedShift.shiftType === 'morning' ? 'brightness_5' : selectedShift.shiftType === 'evening' ? 'light_mode' : 'dark_mode'}
+                    </span>
+                    {selectedShift.shiftType} Shift
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-label-caps text-[10px] text-on-surface-variant tracking-widest uppercase mb-1">STAFFING RATIO</div>
+                  <div className={`font-data-lg text-[24px] font-bold ${selectedShift.officers.length >= selectedShift.requiredOfficers ? 'text-success' : 'text-amber'}`}>
+                    {selectedShift.officers.length} / {selectedShift.requiredOfficers}
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-slate-400">Staffing</div>
-                <div className={`text-lg font-mono font-bold ${selectedShift.officers.length >= selectedShift.requiredOfficers ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {selectedShift.officers.length} / {selectedShift.requiredOfficers}
-                </div>
-              </div>
-            </div>
 
-            <div>
-              <h4 className="text-sm font-semibold text-slate-300 mb-2 uppercase tracking-wider">Assigned Officers</h4>
-              {selectedShift.officers.length === 0 ? (
-                <div className="p-4 text-center bg-red-500/10 text-red-400 rounded-xl border border-red-500/20 text-sm">
-                  No officers assigned to this shift.
-                </div>
-              ) : (
-                <ul className="divide-y divide-slate-700/50 bg-slate-800/30 rounded-xl border border-slate-700/50">
-                  {selectedShift.officers.map((off, idx) => {
-                    const officer = typeof off === 'object' ? off : { _id: off, name: 'Unknown Officer', rank: 'N/A' };
-                    // If backend populated it, we have details. Else we just have ID.
-                    return (
-                      <li key={idx} className="p-3 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                            <Shield className="w-4 h-4 text-blue-400" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-white">{officer.name || `ID: ${officer}`}</div>
-                            {officer.rank && <div className="text-xs text-slate-400">{officer.rank}</div>}
-                          </div>
-                        </div>
-                        {officer.fatigueScore !== undefined && (
-                          <div className="flex flex-col items-end">
-                            <div className="text-[10px] text-slate-500 uppercase">Fatigue</div>
-                            <div className={`text-sm font-mono ${officer.fatigueScore > 60 ? 'text-red-400' : officer.fatigueScore > 30 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                              {officer.fatigueScore}
+              <div>
+                <h4 className="font-label-caps text-[11px] text-on-surface-variant uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[14px]">shield_person</span>
+                  Assigned Personnel
+                </h4>
+                
+                {selectedShift.officers.length === 0 ? (
+                  <div className="p-4 text-center bg-crimson/10 text-crimson rounded-lg border border-crimson/20 font-data-md text-[12px] uppercase">
+                    NO PERSONNEL ASSIGNED TO THIS VECTOR.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-outline-variant/20 bg-surface-container-lowest/50 rounded-lg border border-outline-variant/30">
+                    {selectedShift.officers.map((off, idx) => {
+                      const officer = typeof off === 'object' ? off : { _id: off, name: 'Unknown Officer', role: 'N/A' };
+                      return (
+                        <li key={idx} className="p-3 flex justify-between items-center hover:bg-white/5 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded border border-surface-tint/30 bg-primary-container/10 flex items-center justify-center">
+                              <span className="material-symbols-outlined text-[16px] text-surface-tint">person</span>
+                            </div>
+                            <div>
+                              <div className="font-data-md text-[14px] text-on-surface uppercase">{officer.name || `ID: ${officer}`}</div>
+                              {officer.role && <div className="font-label-caps text-[9px] text-on-surface-variant/70 tracking-widest uppercase">{officer.role}</div>}
                             </div>
                           </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+                          {officer.fatigueScore !== undefined && (
+                            <div className="flex flex-col items-end">
+                              <div className="font-label-caps text-[9px] text-on-surface-variant/70 tracking-widest uppercase">FATIGUE</div>
+                              <div className={`font-data-md text-[14px] ${officer.fatigueScore > 60 ? 'text-crimson' : officer.fatigueScore > 30 ? 'text-amber' : 'text-success'}`}>
+                                {officer.fatigueScore}%
+                              </div>
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </Modal>
-    </main>
+          )}
+        </Modal>
+      )}
+    </div>
   );
 };
 

@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { ToastProvider } from './components/Toast';
 
-import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import IncidentsPage from './pages/IncidentsPage';
@@ -57,11 +57,11 @@ const AppLayout = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-[#0b1220] text-slate-200 font-sans selection:bg-sky-500/30">
+    <div className="min-h-screen w-full bg-background text-on-surface font-body-md flex overflow-hidden selection:bg-surface-tint/30">
 
-      <Navbar status={status} incidents={incidents} />
+      <Sidebar />
 
-      <div className="relative z-10">
+      <div className="relative flex-1 flex flex-col h-screen overflow-y-auto">
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/map" element={<MapPage />} />

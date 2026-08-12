@@ -1,38 +1,31 @@
-import { useEffect } from 'react';
-import { X } from 'lucide-react';
+import React from 'react';
+import { createPortal } from 'react-dom';
 
-const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
-  useEffect(() => {
-    const handleKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const sizeClasses = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
-      <div className={`relative w-full ${sizeClasses[size]} glass-card rounded-2xl shadow-2xl animate-scale-in`}>
-        <div className="flex items-center justify-between p-5 border-b border-slate-700/30">
-          <h3 className="text-lg font-bold text-white">{title}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5 text-slate-500 hover:text-white transition-all">
-            <X className="w-5 h-5" />
+const Modal = ({ title, children, onClose }) => {
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+      <div 
+        className="fixed inset-0"
+        onClick={onClose}
+      ></div>
+      <div className="relative w-full max-w-2xl sentinel-panel rounded-xl overflow-hidden animate-scale-in border border-outline-variant/30 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center justify-between p-6 border-b border-outline-variant/30 bg-surface/50">
+          <h2 className="font-headline-md text-headline-md text-primary-container tracking-tight flex items-center gap-2">
+            {title}
+          </h2>
+          <button 
+            onClick={onClose}
+            className="text-outline-variant hover:text-error transition-colors p-1"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
-        <div className="p-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="p-8 bg-surface/80">
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

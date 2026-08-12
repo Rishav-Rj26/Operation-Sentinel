@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Crosshair, Activity, RefreshCw, MapPin, Navigation } from 'lucide-react';
 import { sectorsAPI, unitsAPI, incidentsAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import 'leaflet/dist/leaflet.css';
@@ -133,9 +132,9 @@ const MapPage = () => {
       setUnits(mappedUnits);
       setIncidents(mappedIncidents);
       setLastUpdate(new Date());
-      if (showToast) toast.success('Map data refreshed');
+      if (showToast) toast.success('Telemetry synchronized');
     } catch {
-      toast.error('Failed to load map data');
+      toast.error('Failed to sync map telemetry');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -148,64 +147,73 @@ const MapPage = () => {
     return () => clearInterval(refreshInterval.current);
   }, [fetchData]);
 
-  const timeSince = lastUpdate ? `${Math.floor((Date.now() - lastUpdate) / 1000)}s ago` : '—';
+  const timeSince = lastUpdate ? `${Math.floor((Date.now() - lastUpdate) / 1000)}s` : '—';
   const currentTile = TILE_LAYERS[activeLayer];
   const sectorCoords = spreadAround(centerRef.current[0], centerRef.current[1], 24, 4);
 
   return (
-    <main className="w-full max-w-[1600px] mx-auto px-6 lg:px-10 py-8 space-y-6 pb-16 animate-fade-in flex flex-col h-[calc(100vh-64px)]">
+    <div className="flex-1 p-gutter flex flex-col overflow-hidden relative bg-background">
+      {/* Background ambient glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary-container/5 rounded-full blur-[120px]"></div>
+      </div>
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 animate-slide-up shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 animate-slide-up shrink-0 z-10 mb-6 border-b border-outline-variant/30 pb-4">
         <div>
           <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
-              <Navigation className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="text-xs font-semibold text-indigo-400">📍 {locationName}</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border bg-primary/10 border-primary/30 font-label-caps text-[10px] uppercase tracking-widest text-primary">
+              <span className="material-symbols-outlined text-[12px]">location_on</span>
+              {locationName}
             </div>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
-              <Crosshair className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-xs font-semibold text-blue-400">
-                {userLocation ? 'GPS Locked' : geoError ? 'GPS Failed' : 'Acquiring GPS...'}
-              </span>
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border font-label-caps text-[10px] uppercase tracking-widest ${userLocation ? 'bg-primary-fixed/10 border-primary-fixed/30 text-primary-fixed' : geoError ? 'bg-crimson/10 border-crimson/30 text-crimson' : 'bg-amber/10 border-amber/30 text-amber'}`}>
+              <span className="material-symbols-outlined text-[12px]">my_location</span>
+              {userLocation ? 'GPS LOCKED' : geoError ? 'GPS FAILED' : 'ACQUIRING GPS...'}
             </div>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <Activity className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-xs font-semibold text-emerald-400">Auto-refresh: 10s</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border bg-success/10 border-success/30 font-label-caps text-[10px] uppercase tracking-widest text-success">
+              <span className="material-symbols-outlined text-[12px]">sync</span>
+              AUTO-SYNC: 10s
             </div>
             {accuracy && (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
-                <MapPin className="w-3.5 h-3.5 text-purple-400" />
-                <span className="text-xs font-semibold text-purple-400">±{Math.round(accuracy)}m accuracy</span>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border bg-outline-variant/10 border-outline-variant/30 font-label-caps text-[10px] uppercase tracking-widest text-outline-variant">
+                <span className="material-symbols-outlined text-[12px]">radar</span>
+                ±{Math.round(accuracy)}m RADAR
               </div>
             )}
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-white">Tactical Map</h1>
+          <h1 className="font-headline-md text-headline-md text-primary-container tracking-tight flex items-center gap-2">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>map</span>
+            Tactical Map
+          </h1>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] text-slate-500 font-medium">Updated: {timeSince}</span>
+        
+        <div className="flex items-center gap-4">
+          <div className="font-data-md text-[11px] text-outline-variant uppercase tracking-widest">
+            LAST SYNC: <span className="text-primary">{timeSince}</span>
+          </div>
           <button
             onClick={() => fetchData(true)}
             disabled={refreshing}
-            className="btn-press inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-xs font-semibold text-slate-300 hover:text-white transition-all"
+            className="btn-primary px-4 py-2 rounded-lg flex items-center gap-2 shadow-[0_0_15px_rgba(0,242,255,0.15)] hover:shadow-[0_0_25px_rgba(0,242,255,0.4)]"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
+            <span className={`material-symbols-outlined text-[16px] ${refreshing ? 'animate-spin' : ''}`}>sync</span>
+            SYNC
           </button>
         </div>
       </div>
 
-      {/* Map */}
-      <div className="glass-card rounded-2xl p-2 flex-1 relative overflow-hidden animate-slide-up stagger-1 border border-slate-700/50 shadow-2xl">
+      {/* Map Container */}
+      <div className="sentinel-panel rounded-lg flex-1 relative overflow-hidden animate-slide-up border border-outline-variant/30 z-10 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 z-50">
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-[2000]">
             <div className="flex flex-col items-center gap-4">
-              <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-              <p className="text-blue-400 font-semibold animate-pulse">Acquiring GPS & Loading Data...</p>
+              <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(0,242,255,0.5)]" />
+              <p className="font-label-caps text-label-caps text-primary uppercase tracking-widest animate-pulse">Initializing Telemetry...</p>
             </div>
           </div>
         )}
 
-        <MapContainer center={mapCenter} zoom={13} className="w-full h-full rounded-xl z-0" zoomControl={false}>
+        <MapContainer center={mapCenter} zoom={13} className="w-full h-full z-0 bg-[#0a192f]" zoomControl={false}>
           <TileLayer url={currentTile.url} attribution={currentTile.attr} />
           {currentTile.overlay && <TileLayer url={currentTile.overlay} />}
           <MapController center={flyTarget} />
@@ -217,24 +225,24 @@ const MapPage = () => {
                 center={userLocation}
                 radius={accuracy || 50}
                 pathOptions={{
-                  fillColor: '#3b82f6',
-                  fillOpacity: 0.08,
-                  color: '#3b82f6',
-                  weight: 2,
-                  dashArray: '6',
+                  fillColor: 'var(--primary-container)',
+                  fillOpacity: 0.1,
+                  color: 'var(--primary-container)',
+                  weight: 1,
+                  dashArray: '4',
                 }}
               />
               <Marker position={userLocation} icon={createUserIcon()}>
-                <Popup>
-                  <div className="p-1">
-                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 mb-1">
-                      YOUR LOCATION
+                <Popup className="sentinel-popup">
+                  <div className="p-1 font-body-md text-sm">
+                    <span className="inline-block px-1.5 py-0.5 rounded font-label-caps text-[9px] bg-primary-fixed/20 text-primary-fixed border border-primary-fixed/30 mb-1 uppercase tracking-widest">
+                      COMMAND NODE
                     </span>
-                    <h3 className="font-bold text-white m-0 text-sm">{locationName}</h3>
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    <h3 className="font-bold text-on-surface m-0 mb-1">{locationName}</h3>
+                    <p className="font-data-md text-[10px] text-on-surface-variant">
                       {userLocation[0].toFixed(6)}°N, {userLocation[1].toFixed(6)}°E
                     </p>
-                    {accuracy && <p className="text-[10px] text-slate-500">Accuracy: ±{Math.round(accuracy)}m</p>}
+                    {accuracy && <p className="font-data-md text-[10px] text-outline-variant">ACCURACY: ±{Math.round(accuracy)}m</p>}
                   </div>
                 </Popup>
               </Marker>
@@ -246,16 +254,16 @@ const MapPage = () => {
             <Marker
               key={incident._id}
               position={[incident.lat, incident.lng]}
-              icon={createPulsingIcon('#ef4444', 14, incident.severity === 'critical')}
+              icon={createPulsingIcon(incident.severity === 'critical' ? '#d50000' : '#ffbf00', 14, incident.severity === 'critical')}
             >
-              <Popup>
-                <div className="p-1">
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 mb-1">
-                    {incident.severity?.toUpperCase()} INCIDENT
+              <Popup className="sentinel-popup">
+                <div className="p-1 font-body-md text-sm">
+                  <span className={`inline-block px-1.5 py-0.5 rounded font-label-caps text-[9px] uppercase tracking-widest mb-1 border ${incident.severity === 'critical' ? 'bg-crimson/20 text-crimson border-crimson/30' : 'bg-amber/20 text-amber border-amber/30'}`}>
+                    {incident.severity} INCIDENT
                   </span>
-                  <h3 className="font-bold text-white m-0 text-sm leading-tight">{incident.title}</h3>
-                  <p className="text-xs text-slate-400 mt-1">{incident.location}</p>
-                  <p className="text-[10px] text-slate-500 mt-1 capitalize">Status: {incident.status}</p>
+                  <h3 className="font-bold text-on-surface m-0 mb-1 leading-tight">{incident.title}</h3>
+                  <p className="font-data-md text-[10px] text-outline-variant mb-1">{incident.location}</p>
+                  <p className="font-label-caps text-[9px] text-primary uppercase tracking-widest">STATUS: {incident.status}</p>
                 </div>
               </Popup>
             </Marker>
@@ -266,15 +274,15 @@ const MapPage = () => {
             <Marker
               key={unit._id}
               position={[unit.lat, unit.lng]}
-              icon={createPulsingIcon('#22d3ee', 12, unit.status === 'En Route')}
+              icon={createPulsingIcon('#00dbe7', 12, unit.status === 'En Route')}
             >
-              <Popup>
-                <div className="p-1">
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 mb-1">
-                    {unit.status?.toUpperCase()}
+              <Popup className="sentinel-popup">
+                <div className="p-1 font-body-md text-sm">
+                  <span className="inline-block px-1.5 py-0.5 rounded font-label-caps text-[9px] bg-primary/20 text-primary border border-primary/30 mb-1 uppercase tracking-widest">
+                    {unit.status}
                   </span>
-                  <h3 className="font-bold text-white m-0 text-sm leading-tight">Unit {unit.unitId}</h3>
-                  <p className="text-xs text-slate-400 mt-1">{unit.type} • {unit.sectorName}</p>
+                  <h3 className="font-bold text-on-surface m-0 mb-1 leading-tight">UNIT {unit.unitId}</h3>
+                  <p className="font-data-md text-[10px] text-outline-variant uppercase">{unit.type} • {unit.sectorName}</p>
                 </div>
               </Popup>
             </Marker>
@@ -290,18 +298,22 @@ const MapPage = () => {
                 center={[coords.lat, coords.lng]}
                 pathOptions={{
                   fillColor: getHeatColor(sector.intensity),
-                  fillOpacity: sector.intensity > 70 ? 0.3 : sector.intensity > 40 ? 0.12 : 0.06,
+                  fillOpacity: sector.intensity > 70 ? 0.15 : sector.intensity > 40 ? 0.08 : 0.03,
                   color: getHeatColor(sector.intensity),
                   weight: 1,
-                  dashArray: '4',
+                  dashArray: '2',
                 }}
                 radius={700}
               >
-                <Popup>
-                  <div className="p-1">
-                    <h3 className="font-bold text-white m-0">{sector.name}</h3>
-                    <p className="text-xs text-slate-400 mt-1">Intensity: <strong className="text-white">{sector.intensity}%</strong></p>
-                    <p className="text-xs text-slate-400">Active Incidents: <strong className="text-white">{sector.activeIncidents}</strong></p>
+                <Popup className="sentinel-popup">
+                  <div className="p-1 font-body-md text-sm">
+                    <h3 className="font-bold text-on-surface m-0 mb-1 uppercase tracking-wider">{sector.name}</h3>
+                    <p className="font-label-caps text-[9px] text-on-surface-variant uppercase tracking-widest mb-1">
+                      INTENSITY: <span className="font-data-md text-[12px] text-surface-tint font-bold">{sector.intensity}%</span>
+                    </p>
+                    <p className="font-label-caps text-[9px] text-on-surface-variant uppercase tracking-widest">
+                      ACTIVE ALERTS: <span className="font-data-md text-[12px] text-primary font-bold">{sector.activeIncidents}</span>
+                    </p>
                   </div>
                 </Popup>
               </Circle>
@@ -309,28 +321,29 @@ const MapPage = () => {
           })}
         </MapContainer>
 
-        {/* Map Controls */}
+        {/* Floating Controls */}
+        <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
+          <MapLegend incidentCount={incidents.length} unitCount={units.length} />
+          
+          <button
+            onClick={() => {
+              const target = userLocation || FALLBACK_CENTER;
+              setFlyTarget([target[0] + 0.0001 * Math.random(), target[1]]);
+            }}
+            className="w-10 h-10 rounded-full bg-surface-container-low/80 border border-outline-variant/30 text-on-surface-variant hover:text-primary hover:border-primary/50 flex items-center justify-center backdrop-blur-md transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+            title="CENTER ON COMMAND NODE"
+          >
+            <span className="material-symbols-outlined text-[20px]">my_location</span>
+          </button>
+        </div>
+
         <MapLayerSwitcher
           activeLayer={activeLayer}
           setActiveLayer={setActiveLayer}
           showMenu={showLayerMenu}
           setShowMenu={setShowLayerMenu}
         />
-
-        <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
-          <MapLegend incidentCount={incidents.length} unitCount={units.length} />
-          <button
-            onClick={() => {
-              const target = userLocation || FALLBACK_CENTER;
-              setFlyTarget([target[0] + 0.0001 * Math.random(), target[1]]);
-            }}
-            className="btn-press glass-card p-3 rounded-xl hover:bg-slate-800/80 transition-colors flex items-center justify-center border border-slate-700/50 group"
-            title="Center on my location"
-          >
-            <Navigation className="w-5 h-5 text-slate-400 group-hover:text-blue-400" />
-          </button>
-        </div>
-
+        
         <MapStatusBar
           userLocation={userLocation}
           incidentCount={incidents.length}
@@ -338,7 +351,7 @@ const MapPage = () => {
           locationName={locationName}
         />
       </div>
-    </main>
+    </div>
   );
 };
 

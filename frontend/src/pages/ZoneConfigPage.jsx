@@ -1,273 +1,234 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Grid3X3, Link as LinkIcon, Zap, Plus, Settings, Trash2 } from 'lucide-react';
-import Modal from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { zonesAPI } from '../services/api';
-
-const emptyForm = { name: '', sizeScore: 5, densityScore: 5, adjacentZones: [] };
-
-const computeZScore = (s, d) => ((0.4 * s + 0.6 * d) / 1.0).toFixed(2);
-
-const getColorForD = (d) => {
-  if (d <= 3) return 'green';
-  if (d <= 7) return 'yellow';
-  return 'red';
-};
+import ScoreSlider from '../components/ScoreSlider';
 
 const ZoneConfigPage = () => {
   const [zones, setZones] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [form, setForm] = useState({ name: '', size: 5, density_score: 5, type: 'commercial', boundaries: [] });
+  const [loading, setLoading] = useState(false);
   const toast = useToast();
 
-  const loadData = async () => {
+  useEffect(() => {
+    fetchZones();
+  }, []);
+
+  const fetchZones = async () => {
     try {
-      setLoading(true);
-      const res = await zonesAPI.getAll();
-      setZones(Array.isArray(res) ? res : (res.data || []));
-    } catch {
+      const data = await zonesAPI.getAll();
+      setZones(data);
+    } catch (err) {
       toast.error('Failed to load zones');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const zoneData = {
+        name: form.name || 'SECTOR-X',
+        type: form.type,
+        boundaries: form.boundaries.length > 0 ? form.boundaries : [[-71.0589, 42.3601]],
+        density_score: form.density_score
+      };
+      await zonesAPI.create(zoneData);
+      toast.success('Zone initialized successfully');
+      setForm({ name: '', size: 5, density_score: 5, type: 'commercial', boundaries: [] });
+      fetchZones();
+    } catch (err) {
+      toast.error(err.message || 'Failed to initialize zone');
     } finally {
       setLoading(false);
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadData(); }, []);
-
-  const openCreate = () => { setEditId(null); setForm(emptyForm); setModal(true); };
-  const openEdit = (z) => {
-    setEditId(z._id || z.id);
-    setForm({ 
-      name: z.name, 
-      sizeScore: z.sizeScore || 5, 
-      densityScore: z.densityScore || 5, 
-      adjacentZones: z.adjacentZones || [] 
-    });
-    setModal(true);
-  };
-
-  const submit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editId) {
-        await zonesAPI.update(editId, form);
-        toast.success('Zone updated');
-      } else {
-        await zonesAPI.create(form);
-        toast.success('Zone created');
-      }
-      setModal(false);
-      loadData();
-    } catch (err) { toast.error(err.message || 'Error saving zone'); }
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await zonesAPI.delete(deleteTarget);
-      toast.success('Zone deleted');
-      loadData();
-    } catch (err) { toast.error(err.message || 'Error deleting zone'); }
-    finally { setDeleteTarget(null); }
-  };
-
-  const handleToggleAdjacency = (id) => {
-    setForm(prev => {
-      const adj = prev.adjacentZones.includes(id) 
-        ? prev.adjacentZones.filter(x => x !== id)
-        : [...prev.adjacentZones, id];
-      return { ...prev, adjacentZones: adj };
-    });
-  };
-
-  // Pre-calculate positions for visualization nodes
-  const nodeRadius = 120;
-  const nodes = zones.map((z, i) => {
-    const angle = (i / Math.max(1, zones.length)) * 2 * Math.PI;
-    return {
-      ...z,
-      x: 150 + nodeRadius * Math.cos(angle),
-      y: 150 + nodeRadius * Math.sin(angle),
+  // Hologram styling logic based on threat level
+  const getThreatColors = (level) => {
+    if (level <= 3) return {
+      textClass: 'text-primary-container',
+      bgClass: 'bg-primary-container/5',
+      borderClass: 'border-primary-container',
+      borderColor: 'rgba(0,242,255,0.5)',
+      shadow: 'rgba(0,242,255,0.2)',
+      status: 'NOMINAL'
     };
-  });
+    if (level <= 7) return {
+      textClass: 'text-amber-400',
+      bgClass: 'bg-amber-400/5',
+      borderClass: 'border-amber-400',
+      borderColor: 'rgba(251,191,36,0.5)',
+      shadow: 'rgba(251,191,36,0.2)',
+      status: 'ELEVATED'
+    };
+    return {
+      textClass: 'text-rose-500',
+      bgClass: 'bg-rose-500/10',
+      borderClass: 'border-rose-500',
+      borderColor: 'rgba(244,63,94,0.5)',
+      shadow: 'rgba(244,63,94,0.4)',
+      status: 'CRITICAL'
+    };
+  };
+
+  const threatColors = getThreatColors(form.density_score);
+  const scaleOuter = 0.8 + (form.size * 0.05);
 
   return (
-    <main className="relative z-10 w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Zone Configuration</h1>
-          <p className="text-slate-400 text-sm">Configure zone attributes and adjacencies.</p>
-        </div>
-        <button onClick={openCreate} className="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all">
-          <Plus className="w-4 h-4 mr-2" />Add Zone
-        </button>
+    <div className="flex-1 p-gutter flex items-center justify-center relative overflow-hidden bg-background">
+      {/* Background ambient glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary-container/5 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-secondary-container/10 rounded-full blur-[80px]"></div>
       </div>
 
-      {/* Heatmap Strip */}
-      <div className="glass-card rounded-2xl p-4 flex gap-1 h-12 items-center">
-        {zones.length === 0 ? <span className="text-slate-500 text-sm">No zones configured</span> : 
-          zones.map(z => {
-            const c = getColorForD(z.densityScore || 5);
-            const bg = c === 'green' ? 'bg-emerald-500' : c === 'yellow' ? 'bg-amber-500' : 'bg-crimson-500 bg-red-600';
-            return (
-              <div key={z._id || z.id} className={`flex-1 h-full rounded-sm opacity-80 hover:opacity-100 transition-opacity ${bg}`} title={`${z.name} (D:${z.densityScore})`} />
-            );
-          })
-        }
-      </div>
+      <main className="w-full max-w-5xl sentinel-panel rounded-xl flex flex-col md:flex-row overflow-hidden relative z-10 border border-outline-variant/30">
+        
+        {/* Left Form Section */}
+        <div className="w-full md:w-3/5 p-8 border-b md:border-b-0 md:border-r border-outline-variant/30 z-10 flex flex-col bg-surface/80">
+          <header className="mb-8 border-b border-outline-variant/30 pb-4 flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>add_location_alt</span>
+                <h1 className="font-headline-md text-headline-md text-primary-container tracking-tight">Zone Configuration</h1>
+              </div>
+              <p className="font-data-md text-data-md text-on-surface-variant">Initialize and parameterize new operational zone.</p>
+            </div>
+            <div className="text-right">
+              <div className="font-data-md text-[10px] text-outline uppercase tracking-widest">System Status</div>
+              <div className="font-data-md text-data-md text-primary-fixed flex items-center gap-2 justify-end">
+                <div className="w-2 h-2 rounded-full bg-primary-fixed animate-pulse shadow-[0_0_8px_#74f5ff]"></div>
+                ONLINE
+              </div>
+            </div>
+          </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* LEFT PANEL */}
-        <div className="space-y-4 max-h-[600px] overflow-y-auto hide-scrollbar pr-2">
-          {loading ? <div className="text-slate-500">Loading zones...</div> : 
-           zones.length === 0 ? <div className="text-slate-500 text-center py-10 glass-card rounded-2xl">No zones created yet</div> :
-           zones.map(z => {
-             const c = getColorForD(z.densityScore || 5);
-             const zScore = computeZScore(z.sizeScore ?? z.size_score ?? 5, z.densityScore ?? z.density_score ?? 5);
-             const borderLeft = c === 'green' ? '#00C853' : c === 'yellow' ? '#FFBF00' : '#D50000';
-             
-             return (
-               <div key={z._id || z.id} className="zone-card glass-card rounded-xl p-4 flex flex-col gap-3" style={{ borderLeft: `4px solid ${borderLeft}` }}>
-                 <div className="flex justify-between items-start">
-                   <div className="flex items-center gap-2">
-                     <MapPin className="w-5 h-5 text-slate-400" />
-                     <h3 className="text-lg font-bold text-white">{z.name}</h3>
-                   </div>
-                   <div className="flex gap-1">
-                     <button onClick={()=>openEdit(z)} className="p-1.5 text-slate-400 hover:text-blue-400"><Settings className="w-4 h-4" /></button>
-                     <button onClick={()=>setDeleteTarget(z._id || z.id)} className="p-1.5 text-slate-400 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
-                   </div>
-                 </div>
-                 <div className="grid grid-cols-3 gap-2">
-                   <div className="bg-slate-800/50 rounded-lg p-2 text-center">
-                     <div className="text-[10px] text-slate-400 uppercase">Size (S)</div>
-                     <div className="text-lg font-mono text-white">{z.sizeScore || 5}</div>
-                   </div>
-                   <div className="bg-slate-800/50 rounded-lg p-2 text-center">
-                     <div className="text-[10px] text-slate-400 uppercase">Density (D)</div>
-                     <div className="text-lg font-mono text-white">{z.densityScore || 5}</div>
-                   </div>
-                   <div className="bg-slate-800/50 rounded-lg p-2 text-center">
-                     <div className="text-[10px] text-cyan-400 uppercase">Z-Score</div>
-                     <div className="text-lg font-mono text-cyan-300">{zScore}</div>
-                   </div>
-                 </div>
-                 <div className="flex items-center gap-2 text-sm text-slate-400 mt-1">
-                   <LinkIcon className="w-4 h-4" />
-                   <span>Adjacencies: {(z.adjacentZones || []).length}</span>
-                 </div>
-               </div>
-             );
-           })
-          }
-        </div>
-
-        {/* RIGHT PANEL - Adjacency Visualization */}
-        <div className="glass-card rounded-2xl p-6 min-h-[400px] flex flex-col items-center justify-center relative">
-          <h3 className="absolute top-6 left-6 text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-            <Grid3X3 className="w-4 h-4" /> Adjacency Map
-          </h3>
-          
-          <div className="adjacency-graph w-full max-w-[300px] aspect-square relative bg-transparent border-0 mt-8">
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 300">
-              {nodes.map(n => 
-                (n.adjacentZones || []).map(adjId => {
-                  const target = nodes.find(x => (x._id || x.id) === adjId);
-                  if (!target) return null;
-                  return (
-                    <line 
-                      key={`${n._id || n.id}-${adjId}`}
-                      x1={n.x} y1={n.y} x2={target.x} y2={target.y}
-                      className="edge-line"
-                    />
-                  );
-                })
-              )}
-            </svg>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 flex-grow">
             
-            {nodes.map(n => {
-              const c = getColorForD(n.densityScore || 5);
-              return (
-                <div key={n._id || n.id} className={`node-zone ${c}`} style={{ left: `${n.x}px`, top: `${n.y}px` }}>
-                  {n.name.substring(0, 3)}
+            <div className="flex flex-col gap-2">
+              <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Zone Designation</label>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  value={form.name} 
+                  onChange={(e) => setForm({...form, name: e.target.value})} 
+                  placeholder="e.g. SECTOR-7G" 
+                  required 
+                  className="w-full bg-surface-container-lowest/50 text-on-surface border border-outline-variant/50 rounded-lg px-3 py-3 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all font-data-md text-data-md backdrop-blur-sm"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span className="material-symbols-outlined text-outline-variant text-sm">terminal</span>
                 </div>
-              );
-            })}
+              </div>
+            </div>
+
+            <ScoreSlider 
+              label="Spatial Radius" 
+              value={form.size} 
+              onChange={(val) => setForm({...form, size: val})} 
+            />
+
+            <ScoreSlider 
+              label="Threat Assessment Level" 
+              value={form.density_score} 
+              onChange={(val) => setForm({...form, density_score: val})} 
+              isThreat={true} 
+            />
+
+            <div className="flex flex-col gap-2">
+              <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Adjacent Sectors</label>
+              <div className="bg-surface-container-lowest/50 border border-outline-variant/50 rounded-lg p-3 min-h-[52px] flex flex-wrap gap-2 items-center cursor-text">
+                <span className="inline-flex items-center gap-1 bg-surface-variant/50 text-on-surface px-2 py-1 rounded font-data-md text-xs border border-outline-variant/50">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span> ALPHA-01
+                  <button type="button" className="text-outline hover:text-error transition-colors ml-1"><span className="material-symbols-outlined text-[14px]">close</span></button>
+                </span>
+                <input type="text" placeholder="Add sector..." className="bg-transparent border-none focus:ring-0 text-on-surface font-data-md text-data-md p-0 flex-grow min-w-[100px] outline-none" />
+              </div>
+            </div>
+
+            <div className="flex-grow"></div>
+
+            <div className="flex items-center justify-end gap-4 mt-6 pt-4 border-t border-outline-variant/30">
+              <button type="button" onClick={() => setForm({ name: '', size: 5, density_score: 5, type: 'commercial', boundaries: [] })} className="px-6 py-2.5 text-on-surface-variant font-label-caps text-label-caps tracking-widest hover:text-on-surface hover:bg-surface-container-highest/50 transition-all rounded-lg">
+                DISCARD
+              </button>
+              <button type="submit" disabled={loading} className="relative group overflow-hidden px-8 py-2.5 bg-primary-container/10 border border-primary-container text-primary-container font-label-caps text-label-caps font-bold tracking-widest hover:bg-primary-container hover:text-on-primary-container transition-all duration-300 rounded-lg shadow-[0_0_15px_rgba(0,242,255,0.15)] hover:shadow-[0_0_25px_rgba(0,242,255,0.4)]">
+                <span className="relative z-10 flex items-center gap-2">
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-primary-container border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
+                  )}
+                  INITIALIZE ZONE
+                </span>
+                <div className="absolute inset-0 h-full w-0 bg-primary-container transition-all duration-300 ease-out group-hover:w-full z-0"></div>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Right Preview Section */}
+        <div className="w-full md:w-2/5 bg-surface-container-lowest/30 p-8 flex flex-col items-center justify-center z-10 relative overflow-hidden backdrop-blur-sm">
+          <div className="absolute inset-0 opacity-[0.2]" style={{ backgroundImage: 'linear-gradient(rgba(132, 148, 149, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(132, 148, 149, 0.2) 1px, transparent 1px)', backgroundSize: '20px 20px', perspective: '500px' }}></div>
+          
+          <div className="absolute top-8 left-8 z-20 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary-fixed animate-ping"></div>
+            <span className="font-label-caps text-label-caps text-primary-fixed tracking-widest uppercase">Live Telemetry Preview</span>
+          </div>
+
+          <div className="relative w-80 h-80 flex items-center justify-center mt-8 z-10" style={{ transform: 'rotateX(15deg) rotateY(-5deg)', transformStyle: 'preserve-3d', perspective: '1000px' }}>
+            {/* Base floor */}
+            <div className="absolute bottom-0 w-full h-full border border-outline-variant/20 rounded-full" style={{ transform: 'rotateX(70deg) translateZ(-50px)', boxShadow: '0 0 20px rgba(0, 242, 255, 0.05) inset' }}></div>
+            
+            {/* Rings */}
+            <div className={`absolute inset-0 rounded-full border-2 transition-all duration-300 ${threatColors.borderClass.replace('border-', 'border-')}/20`} style={{ transform: `scale(${scaleOuter}) translateZ(0px)`, borderColor: threatColors.borderColor, boxShadow: `0 0 15px ${threatColors.shadow} inset, 0 0 15px ${threatColors.shadow}` }}></div>
+            
+            <div className={`absolute inset-4 rounded-full border-2 border-dashed transition-all duration-300 ${threatColors.borderClass.replace('border-', 'border-')}/40`} style={{ transform: 'scale(1) translateZ(20px)', borderColor: threatColors.borderColor.replace('0.5', '0.8'), animation: `spin ${30 - form.size*1.5}s linear infinite` }}></div>
+            
+            {/* Core Box */}
+            <div className={`absolute w-40 h-40 flex flex-col items-center justify-center backdrop-blur-sm rounded-lg transition-all duration-300 border ${threatColors.bgClass}`} style={{ transform: 'translateZ(60px)', borderColor: threatColors.borderColor, boxShadow: `0 0 30px ${threatColors.shadow}, inset 0 0 20px ${threatColors.shadow}` }}>
+              {/* Corner markers */}
+              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 rounded-tl-sm" style={{ borderColor: threatColors.textClass.replace('text-', '') }}></div>
+              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 rounded-tr-sm" style={{ borderColor: threatColors.textClass.replace('text-', '') }}></div>
+              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 rounded-bl-sm" style={{ borderColor: threatColors.textClass.replace('text-', '') }}></div>
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 rounded-br-sm" style={{ borderColor: threatColors.textClass.replace('text-', '') }}></div>
+              
+              <div className="relative z-10 flex flex-col items-center">
+                <span className="font-data-md text-data-md text-on-surface truncate max-w-[90%] text-center opacity-90 tracking-wider uppercase">{form.name || 'SECTOR'}</span>
+                <div className="h-px w-12 my-2 transition-colors duration-300" style={{ backgroundColor: threatColors.borderColor }}></div>
+                <span className={`font-headline-lg text-headline-lg font-bold transition-colors duration-300 ${threatColors.textClass}`} style={{ textShadow: `0 0 10px ${threatColors.shadow}` }}>LVL {form.density_score}</span>
+              </div>
+            </div>
+
+            <div className="absolute -right-8 top-1/4 text-[10px] font-data-md text-outline-variant text-right" style={{ transform: 'translateZ(30px)' }}>
+              <div>LAT: 42.3601</div><div>LNG: -71.0589</div>
+            </div>
+          </div>
+
+          <div className="mt-8 w-full grid grid-cols-2 gap-4 border-t border-outline-variant/30 pt-6 z-20">
+            <div className="flex flex-col bg-surface-container-low/50 p-3 rounded-lg border border-outline-variant/20 backdrop-blur-sm">
+              <span className="font-label-caps text-label-caps text-outline uppercase mb-1 flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">straighten</span> Est. Radius
+              </span>
+              <span className="font-data-lg text-data-lg text-primary-fixed">{form.size * 100}m</span>
+            </div>
+            <div className="flex flex-col items-end bg-surface-container-low/50 p-3 rounded-lg border border-outline-variant/20 backdrop-blur-sm text-right">
+              <span className="font-label-caps text-label-caps text-outline uppercase mb-1 flex items-center gap-1">
+                Status <span className="material-symbols-outlined text-[14px]">warning</span>
+              </span>
+              <span className={`font-data-lg text-data-lg font-bold transition-colors duration-300 ${threatColors.textClass}`}>{threatColors.status}</span>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
 
-      {/* Add/Edit Modal */}
-      <Modal isOpen={modal} onClose={()=>setModal(false)} title={editId?'Edit Zone':'Add Zone'}>
-        <form onSubmit={submit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Zone Name</label>
-            <input type="text" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required placeholder="e.g. North Sector" className="w-full px-4 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500" />
-          </div>
-          
-          <div>
-            <div className="flex justify-between mb-1.5">
-              <label className="block text-sm font-medium text-slate-300">Size Score (S)</label>
-              <span className="text-cyan-400 font-mono">{form.sizeScore}</span>
-            </div>
-            <input type="range" min="1" max="10" value={form.sizeScore} onChange={e=>setForm({...form,sizeScore:parseInt(e.target.value)})} className="score-slider" />
-          </div>
-          
-          <div>
-            <div className="flex justify-between mb-1.5">
-              <label className="block text-sm font-medium text-slate-300">Density Score (D)</label>
-              <span className="text-cyan-400 font-mono">{form.densityScore}</span>
-            </div>
-            <input type="range" min="1" max="10" value={form.densityScore} onChange={e=>setForm({...form,densityScore:parseInt(e.target.value)})} className="score-slider" />
-          </div>
-
-          <div className="bg-slate-800/40 rounded-xl p-4 flex justify-between items-center border border-slate-700/50">
-            <span className="text-sm text-slate-400 uppercase tracking-wide">Computed Z-Score</span>
-            <span className="text-2xl font-bold text-cyan-400 tabular-nums flex items-center gap-2">
-              <Zap className="w-5 h-5" />
-              {computeZScore(form.sizeScore, form.densityScore)}
-            </span>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-3">Adjacent Zones</label>
-            <div className="grid grid-cols-2 gap-2 max-h-[150px] overflow-y-auto custom-scrollbar p-1">
-              {zones.filter(z => (z._id || z.id) !== editId).map(z => (
-                <label key={z._id || z.id} className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/30 border border-slate-700/50 cursor-pointer hover:bg-slate-700/30 transition-colors">
-                  <input type="checkbox" checked={form.adjacentZones.includes(z._id || z.id)} onChange={()=>handleToggleAdjacency(z._id || z.id)} className="rounded border-slate-600 text-blue-500 focus:ring-blue-500 bg-slate-900" />
-                  <span className="text-sm text-slate-300 truncate">{z.name}</span>
-                </label>
-              ))}
-              {zones.length <= 1 && <span className="text-slate-500 text-sm italic col-span-2">No other zones available</span>}
-            </div>
-          </div>
-          
-          <button type="submit" className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all">
-            {editId?'Update':'Add'} Zone
-          </button>
-        </form>
-      </Modal>
-
-      {/* Delete Modal */}
-      <Modal isOpen={!!deleteTarget} onClose={()=>setDeleteTarget(null)} title="Confirm Deletion" size="sm">
-        <div className="text-center py-4">
-          <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
-            <Trash2 className="w-7 h-7 text-red-400" />
-          </div>
-          <p className="text-slate-300 font-medium mb-1">Delete this zone?</p>
-          <p className="text-slate-500 text-sm mb-6">This will remove adjacencies from other zones.</p>
-          <div className="flex gap-3">
-            <button onClick={()=>setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-semibold hover:bg-white/5 transition-all">Cancel</button>
-            <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-semibold shadow-lg shadow-red-500/20 transition-all">Delete</button>
-          </div>
-        </div>
-      </Modal>
-
-    </main>
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes spin {
+          from { transform: scale(1) translateZ(20px) rotate(0deg); }
+          to { transform: scale(1) translateZ(20px) rotate(360deg); }
+        }
+      `}} />
+    </div>
   );
 };
 
